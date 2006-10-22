@@ -1,0 +1,12 @@
+lib/Config/XPath.pm
+MANIFEST			This list of files
+MANIFEST.SKIP
+t/01use.t
+t/02exceptions.t
+t/03str-config.t
+t/04attr-config.t
+t/05list-config.t
+t/06subconf.t
+t/20defaultconfig.t
+t/data.xml
+META.yml                                 Module meta-data (added by MakeMaker)
