@@ -1,4 +1,5 @@
 lib/Config/XPath.pm
+lib/Config/XPath/Reloadable.pm
 MANIFEST			This list of files
 MANIFEST.SKIP
 t/01use.t
@@ -7,6 +8,10 @@ t/03str-config.t
 t/04attr-config.t
 t/05list-config.t
 t/06subconf.t
+t/10reloadable-constant.t
+t/11reloadable-root.t
+t/12reloadable-set.t
+t/13reloadable-setrecursive.t
 t/20defaultconfig.t
 t/data.xml
 META.yml                                 Module meta-data (added by MakeMaker)

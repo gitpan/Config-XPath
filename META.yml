@@ -1,10 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Config-XPath
-version:      0.01
+version:      0.02
 version_from: lib/Config/XPath.pm
 installdirs:  site
 requires:
+    XML::XPath:                    0
 
 distribution_type: module
 generated_by: ExtUtils::MakeMaker version 6.30_01

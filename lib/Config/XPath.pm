@@ -33,14 +33,15 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
 
 =head1 NAME
 
-C<Config::XPath> - a module for retrieving configuration data
+C<Config::XPath> - a module for retrieving configuration data from XML files
+by using XPath queries
 
 =head1 DESCRIPTION
 
@@ -143,16 +144,15 @@ sub new($)
    my $class = shift;
    my ( $file ) = @_;
 
-   my $xp = XML::XPath->new( filename => $file );
-
-   throw Config::XPath::Exception( "Cannot read config file $file", undef ) unless $xp;
-
    my $self = { 
-      xp       => $xp,
       filename => $file
    };
 
-   return bless $self, $class;
+   bless $self, $class;
+
+   $self->_reload_file;
+
+   return $self;
 }
 
 # Internal-only constructor
@@ -482,6 +482,27 @@ sub get_sub_config_list($)
    return @ret;
 }
 
+# Private methods
+sub _reload_file
+{
+   my $self = shift;
+
+   # Recurse down to the toplevel object
+   return $self->{parent}->reload() if exists $self->{parent};
+
+   my $file = $self->{filename};
+
+   my $xp = XML::XPath->new( filename => $file );
+
+   throw Config::XPath::Exception( "Cannot read config file $file", undef ) unless $xp;
+
+   # If we threw an exception, this line never gets run, so the old {xp} is
+   # preserved. If not, then we know that $xp at least contains valid XML data
+   # so we store it, replacing the old value.
+
+   $self->{xp} = $xp;
+}
+
 # Keep perl happy; keep Britain tidy
 1;
 
@@ -606,5 +627,9 @@ C<XML::XPath> - Perl XML module that implements XPath queries
 =item *
 
 C<Error> - Base module for exception-based error handling
+
+=head1 AUTHOR
+
+Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>
 
 =back
