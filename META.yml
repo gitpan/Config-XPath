@@ -1,10 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Config-XPath
-version:      0.03
+version:      0.04
 version_from: lib/Config/XPath.pm
 installdirs:  site
 requires:
+    Error:                         0.15
     XML::XPath:                    0
 
 distribution_type: module
