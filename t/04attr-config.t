@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 10;
+use Test::More tests => 7;
+use Test::Exception;
 
 use Config::XPath;
 
@@ -18,14 +19,14 @@ $aref = $c->get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" );
 ok( defined $aref, 'attributes defined $aref' );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attributes values' );
 
-eval { $aref = $c->get_config_attrs( "/data/nonexistent" ) };
-ok( defined $@, 'get_config_attrs nonexistent throws exception' );
-is( ref $@, 'Config::XPath::ConfigNotFoundException', 'exception type' );
+throws_ok( sub { $aref = $c->get_config_attrs( "/data/nonexistent" ) },
+           'Config::XPath::ConfigNotFoundException',
+           'get_config_attrs nonexistent throws exception' );
 
-eval { $aref = $c->get_config_attrs( "/data/ccc/dd" ) };
-ok( defined $@, 'get_config_attrs multiple nodes throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $aref = $c->get_config_attrs( "/data/ccc/dd" ) },
+           'Config::XPath::BadConfigException',
+           'get_config_attrs multiple nodes throws exception' );
 
-eval { $aref = $c->get_config_attrs( "/data/aaa/\@str" ) };
-ok( defined $@, 'get_config_attrs attribute throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $aref = $c->get_config_attrs( "/data/aaa/\@str" ) },
+           'Config::XPath::BadConfigException',
+           'get_config_attrs attribute throws exception' );

@@ -1,12 +1,33 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Config-XPath
-version:      0.04
-version_from: lib/Config/XPath.pm
-installdirs:  site
+---
+name: Config-XPath
+version: 0.05
+author:
+  - 'Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>'
+abstract: |-
+  a module for retrieving configuration data from XML files
+  by using XPath queries
+license: perl
 requires:
-    Error:                         0.15
-    XML::XPath:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30_01
+  Error: 0.15
+  XML::XPath: 0
+build_requires:
+  Test::Exception: 0
+provides:
+  Config::XPath:
+    file: lib/Config/XPath.pm
+    version: 0.05
+  Config::XPath::BadConfigException:
+    file: lib/Config/XPath.pm
+    version: 0.05
+  Config::XPath::ConfigNotFoundException:
+    file: lib/Config/XPath.pm
+    version: 0.05
+  Config::XPath::Exception:
+    file: lib/Config/XPath.pm
+    version: 0.05
+  Config::XPath::NoDefaultConfigException:
+    file: lib/Config/XPath.pm
+    version: 0.05
+  Config::XPath::Reloadable:
+    file: lib/Config/XPath/Reloadable.pm
+generated_by: Module::Build version 0.26

@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 6;
+use Test::Exception;
 
 use Config::XPath;
 
@@ -23,6 +24,6 @@ is_deeply( \@l, [ { name => 'one', '+' => 'ff' }, { name => 'two', '+' => 'ff' }
 @l = $c->get_config_list( "/data/nonexistent" );
 is_deeply( \@l, [], 'list missing' );
 
-eval { @l = $c->get_config_list( "/data/comment()" ) };
-ok( defined $@, 'get_config_list unrepresentable throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { @l = $c->get_config_list( "/data/comment()" ) },
+           'Config::XPath::BadConfigException',
+           'get_config_list unrepresentable throws exception' );

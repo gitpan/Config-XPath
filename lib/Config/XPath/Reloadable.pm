@@ -1,16 +1,5 @@
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Library General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#  You may distribute under the terms of either the GNU General Public License
+#  or the Artistic License (the same terms as Perl itself)
 #
 #  (C) Paul Evans, 2006 -- leonerd@leonerd.org.uk
 
@@ -191,6 +180,8 @@ sub _run_nodelist
    my $self = shift;
    my ( $nodelist ) = @_;
 
+   my $class = ref( $self );
+
    my %lastitems;
    %lastitems = %{ $nodelist->{items} } if defined $nodelist->{items};
 
@@ -199,26 +190,31 @@ sub _run_nodelist
    my $listpath = $nodelist->{listpath};
    my $namepath = $nodelist->{namepath};
 
-   my @nodes = $self->SUPER::get_sub_config_list( $listpath );
+   my @nodes = $self->get_config( $listpath );
 
    foreach my $n ( @nodes ) {
-      my $name = $n->get_config_string( $namepath );
+      my $name = $self->get_config_string( $namepath, $n );
 
-      # Escape quote marks and backslashes
-      ( my $quotedname = $name ) =~ s{(['\\])}{\\$1}g;
-
-      $n->{path} = $listpath . "[$namepath='$quotedname']";
+      my $item;
 
       if( exists $lastitems{$name} ) {
-         $n->{nodelists} = $lastitems{$name}->{nodelists};
-         $nodelist->{keep}->( $name, $n ) if defined $nodelist->{keep};
-         delete $lastitems{$name};
+         $item = delete $lastitems{$name};
+
+         $item->{context} = $n;
+
+         $nodelist->{keep}->( $name, $item ) if defined $nodelist->{keep};
       }
       else {
-         $nodelist->{add}->( $name, $n ) if defined $nodelist->{add};
+         $item = $class->newContext( $self, $n );
+
+         # Escape quote marks and backslashes
+         ( my $quotedname = $name ) =~ s{(['\\])}{\\$1}g;
+         $item->{path} = $listpath . "[$namepath='$quotedname']";
+
+         $nodelist->{add}->( $name, $item ) if defined $nodelist->{add};
       }
 
-      $newitems{$name} = $n;
+      $newitems{$name} = $item;
    }
 
    foreach my $name ( keys %lastitems ) {

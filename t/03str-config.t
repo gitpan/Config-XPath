@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 17;
+use Test::More tests => 12;
+use Test::Exception;
 
 use Config::XPath;
 
@@ -26,25 +27,25 @@ is( $s, "1", 'content by selector' );
 $s = $c->get_config_string( "/data/ccc/dd[\@name=\"one\"]/\@value" );
 is( $s, "1", 'attribute by selector' );
 
-eval { $s = $c->get_config_string( "/data/nonexistent" ) };
-ok( defined $@, 'nonexistent throws exception' );
-is( ref $@, 'Config::XPath::ConfigNotFoundException', 'exception type' );
+throws_ok( sub { $s = $c->get_config_string( "/data/nonexistent" ) },
+           'Config::XPath::ConfigNotFoundException',
+           'nonexistent throws exception' );
 
-eval { $s = $c->get_config_string( "/data/eee/ff" ) };
-ok( defined $@, 'multiple nodes throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = $c->get_config_string( "/data/eee/ff" ) },
+           'Config::XPath::BadConfigException',
+           'multiple nodes throws exception' );
 
-eval { $s = $c->get_config_string( "/data/eee" ) };
-ok( defined $@, 'multiple children throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = $c->get_config_string( "/data/eee" ) },
+           'Config::XPath::BadConfigException',
+           'multiple children throws exception' );
 
-eval { $s = $c->get_config_string( "/data/ggg" ) };
-ok( defined $@, 'unrepresentable throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = $c->get_config_string( "/data/ggg" ) },
+           'Config::XPath::BadConfigException',
+           'unrepresentable throws exception' );
 
-eval { $s = $c->get_config_string( "/data/comment()" ) };
-ok( defined $@, 'comment throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = $c->get_config_string( "/data/comment()" ) },
+           'Config::XPath::BadConfigException',
+           'comment throws exception' );
 
 $s = $c->get_config_string( "/data/empty" );
 is( $s, "", 'empty' );

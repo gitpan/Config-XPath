@@ -1,16 +1,5 @@
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Library General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#  You may distribute under the terms of either the GNU General Public License
+#  or the Artistic License (the same terms as Perl itself)
 #
 #  (C) Paul Evans, 2005,2006 -- leonerd@leonerd.org.uk
 
@@ -33,7 +22,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -169,19 +158,21 @@ sub newContext($$)
    return bless $self, $class;
 }
 
-sub get_config($)
+sub get_config($;$)
 {
    my $self = shift;
-   my ( $path ) = @_;
+   my ( $path, $context ) = @_;
 
    my $toplevel = $self;
    $toplevel = $toplevel->{parent} while !exists $toplevel->{xp};
 
    my $xp = $toplevel->{xp};
 
+   $context ||= $self->{context};
+
    my @nodes;
-   if ( exists $self->{context} ) {
-      @nodes = $xp->findnodes( $path, $self->{context} );
+   if ( defined $context ) {
+      @nodes = $xp->findnodes( $path, $context );
    }
    else {
       @nodes = $xp->findnodes( $path );
@@ -190,12 +181,12 @@ sub get_config($)
    return @nodes;
 }
 
-sub get_config_node($)
+sub get_config_node($;$)
 {
    my $self = shift;
-   my ( $path ) = @_;
+   my ( $path, $context ) = @_;
 
-   my @nodes = $self->get_config( $path );
+   my @nodes = $self->get_config( $path, $context );
 
    if ( scalar @nodes == 0 ) {
       throw Config::XPath::ConfigNotFoundException( "No config found", $path );
@@ -258,14 +249,14 @@ C<Config::XPath::NoDefaultConfigException>
 
 =cut
 
-sub get_config_string($)
+sub get_config_string($;$)
 {
    my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-   my ( $path ) = @_;
+   my ( $path, $context ) = @_;
 
    throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
 
-   my $node = $self->get_config_node( $path );
+   my $node = $self->get_config_node( $path, $context );
 
    my $ret;
 
@@ -622,14 +613,14 @@ __END__
 
 =item *
 
-C<XML::XPath> - Perl XML module that implements XPath queries
+L<XML::XPath> - Perl XML module that implements XPath queries
 
 =item *
 
-C<Error> - Base module for exception-based error handling
+L<Error> - Base module for exception-based error handling
+
+=back
 
 =head1 AUTHOR
 
 Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>
-
-=back

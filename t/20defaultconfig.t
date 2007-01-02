@@ -2,13 +2,14 @@
 
 use strict;
 
-use Test::More tests => 35;
+use Test::More tests => 25;
+use Test::Exception;
 
 use Config::XPath;
 
-eval { get_config_string( "/data/aaa/bbb" ) };
-ok( defined $@, 'no default config throws exception' );
-is( ref $@, 'Config::XPath::NoDefaultConfigException', 'exception type' );
+throws_ok( sub { get_config_string( "/data/aaa/bbb" ) },
+           'Config::XPath::NoDefaultConfigException',
+           'no default config throws exception' );
 
 read_default_config( "t/data.xml" );
 
@@ -17,25 +18,25 @@ my $s;
 $s = get_config_string( "/data/aaa/bbb" );
 is( $s, "Content", 'content' );
 
-eval { $s = get_config_string( "/data/nonexistent" ) };
-ok( defined $@, 'nonexistent throws exception' );
-is( ref $@, 'Config::XPath::ConfigNotFoundException', 'exception type' );
+throws_ok( sub { $s = get_config_string( "/data/nonexistent" ) },
+           'Config::XPath::ConfigNotFoundException',
+           'nonexistent throws exception' );
 
-eval { $s = get_config_string( "/data/eee/ff" ) };
-ok( defined $@, 'multiple nodes throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = get_config_string( "/data/eee/ff" ) },
+           'Config::XPath::BadConfigException',
+           'multiple nodes throws exception' );
 
-eval { $s = get_config_string( "/data/eee" ) };
-ok( defined $@, 'multiple children throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = get_config_string( "/data/eee" ) },
+           'Config::XPath::BadConfigException',
+           'multiple children throws exception' );
 
-eval { $s = get_config_string( "/data/ggg" ) };
-ok( defined $@, 'non-text throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = get_config_string( "/data/ggg" ) },
+           'Config::XPath::BadConfigException',
+           'non-text throws exception' );
 
-eval { $s = get_config_string( "/data/comment()" ) };
-ok( defined $@, 'unrepresentable throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $s = get_config_string( "/data/comment()" ) },
+           'Config::XPath::BadConfigException',
+           'unrepresentable throws exception' );
 
 $s = get_config_string( "/data/empty" );
 is( $s, "", 'empty' );
@@ -46,17 +47,17 @@ $aref = get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" );
 ok( defined $aref, 'attributes hash defined'  );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attribute values' );
 
-eval { $aref = get_config_attrs( "/data/nonexistent" ) };
-ok( defined $@, 'missing attrs throws exception' );
-is( ref $@, 'Config::XPath::ConfigNotFoundException', 'exception type' );
+throws_ok( sub { $aref = get_config_attrs( "/data/nonexistent" ) },
+           'Config::XPath::ConfigNotFoundException',
+           'missing attrs throws exception' );
 
-eval { $aref = get_config_attrs( "/data/ccc/dd" ) };
-ok( defined $@, 'multiple attrs throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $aref = get_config_attrs( "/data/ccc/dd" ) },
+           'Config::XPath::BadConfigException',
+           'multiple attrs throws exception' );
 
-eval { $aref = get_config_attrs( "/data/aaa/\@str" ) };
-ok( defined $@, 'attrs of attrs throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { $aref = get_config_attrs( "/data/aaa/\@str" ) },
+           'Config::XPath::BadConfigException',
+           'attrs of attrs throws exception' );
 
 my @l;
 
@@ -66,9 +67,9 @@ is_deeply( \@l, [ qw( one two ) ], 'list of attrs values' );
 @l = get_config_list( "/data/nonexistent" );
 is_deeply( \@l, [], 'list of missing values' );
 
-eval { @l = get_config_list( "/data/comment()" ) };
-ok( defined $@, 'list of comment throws exception' );
-is( ref $@, 'Config::XPath::BadConfigException', 'exception type' );
+throws_ok( sub { @l = get_config_list( "/data/comment()" ) },
+           'Config::XPath::BadConfigException',
+           'list of comment throws exception' );
 
 my $sub = get_sub_config( "/data/ccc" );
 ok( defined $sub, 'subconfig defined' );

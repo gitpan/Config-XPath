@@ -1,8 +1,8 @@
+Build.PL
 lib/Config/XPath.pm
 lib/Config/XPath/Reloadable.pm
-Makefile.PL
 MANIFEST			This list of files
-MANIFEST.SKIP
+META.yml
 t/01use.t
 t/02exceptions.t
 t/03str-config.t
@@ -15,4 +15,3 @@ t/12reloadable-set.t
 t/13reloadable-setrecursive.t
 t/20defaultconfig.t
 t/data.xml
-META.yml                                 Module meta-data (added by MakeMaker)
