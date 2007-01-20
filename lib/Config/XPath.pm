@@ -22,7 +22,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -158,7 +158,7 @@ sub newContext($$)
    return bless $self, $class;
 }
 
-sub get_config($;$)
+sub find($;$)
 {
    my $self = shift;
    my ( $path, $context ) = @_;
@@ -170,15 +170,26 @@ sub get_config($;$)
 
    $context ||= $self->{context};
 
-   my @nodes;
    if ( defined $context ) {
-      @nodes = $xp->findnodes( $path, $context );
+      return $xp->find( $path, $context );
    }
    else {
-      @nodes = $xp->findnodes( $path );
+      return $xp->find( $path );
+   }
+}
+
+sub get_config_nodes
+{
+   my $self = shift;
+   my ( $path ) = @_;
+
+   my $nodeset = $self->find( $path );
+
+   unless( $nodeset->isa( "XML::XPath::NodeSet" ) ) {
+      throw Config::XPath::BadConfigException( "Expected result to be a nodeset", $path );
    }
 
-   return @nodes;
+   return $nodeset->get_nodelist;
 }
 
 sub get_config_node($;$)
@@ -186,7 +197,7 @@ sub get_config_node($;$)
    my $self = shift;
    my ( $path, $context ) = @_;
 
-   my @nodes = $self->get_config( $path, $context );
+   my @nodes = $self->get_config_nodes( $path );
 
    if ( scalar @nodes == 0 ) {
       throw Config::XPath::ConfigNotFoundException( "No config found", $path );
@@ -223,6 +234,8 @@ C<get_sub_config> functions.
 
 =head2 $str = get_config_string( $path )
 
+=head2 $str = $config->get_string( $path )
+
 This function retrieves the string value of a single item in the XML file.
 This item should either be a text-valued element with no sub-elements, or an
 attribute.
@@ -252,46 +265,71 @@ C<Config::XPath::NoDefaultConfigException>
 sub get_config_string($;$)
 {
    my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
+
+   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
+
+   $self->get_string( @_ );
+}
+
+sub get_string
+{
+   my $self = shift;
    my ( $path, $context ) = @_;
 
-   throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
-
-   my $node = $self->get_config_node( $path, $context );
+   my $nodeset = $self->find( $path, $context );
 
    my $ret;
 
-   if ( $node->isa( "XML::XPath::Node::Element" ) ) {
-      my @children = $node->getChildNodes();
-
-      if( !@children ) {
-         # No child nodes - treat this as an empty string
-         $ret = "";
+   if( $nodeset->isa( "XML::XPath::NodeSet" ) ) {
+      my @nodes = $nodeset->get_nodelist;
+      if ( scalar @nodes == 0 ) {
+         throw Config::XPath::ConfigNotFoundException( "No config found", $path );
       }
-      elsif ( scalar @children == 1 ) {
-         my $child = shift @children;
 
-         if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
-            throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
+      if ( scalar @nodes > 1 ) {
+         throw Config::XPath::BadConfigException( "Found more than one node", $path );
+      }
+
+      my $node = $nodes[0];
+
+      if ( $node->isa( "XML::XPath::Node::Element" ) ) {
+         my @children = $node->getChildNodes();
+
+         if( !@children ) {
+            # No child nodes - treat this as an empty string
+            $ret = "";
          }
+         elsif ( scalar @children == 1 ) {
+            my $child = shift @children;
 
-         $ret = $child->string_value();
+            if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
+               throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
+            }
+
+            $ret = $child->string_value();
+         }
+         else {
+            throw Config::XPath::BadConfigException( "Found more than one child node", $path );
+         }
+      }
+      elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
+         $ret = $node->getValue();
       }
       else {
-         throw Config::XPath::BadConfigException( "Found more than one child node", $path );
+         my $t = ref( $node );
+         throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
       }
    }
-   elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
-      $ret = $node->getValue();
-   }
    else {
-      my $t = ref( $node );
-      throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+      $ret = $nodeset->string_value();
    }
 
    return $ret;
 }
 
 =head2 $attrs = get_config_attrs( $path )
+
+=head2 $attrs = $config->get_attrs( $path )
 
 This function retrieves the attributes of a single element in the XML file.
 The attributes are returned in a hash, along with the name of the element
@@ -323,9 +361,16 @@ C<Config::XPath::NoDefaultConfigException>
 sub get_config_attrs($)
 {
    my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-   my ( $path ) = @_;
 
-   throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
+   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
+
+   $self->get_attrs( @_ );
+}
+
+sub get_attrs
+{
+   my $self = shift;
+   my ( $path ) = @_;
 
    my $node = $self->get_config_node( $path );
 
@@ -337,6 +382,8 @@ sub get_config_attrs($)
 }
 
 =head2 @values = get_config_list( $path )
+
+=head2 @values = $config->get_list( $path )
 
 This function obtains a list of nodes matching the given XPath query. Unlike
 the other functions, it is not an error for no nodes to match. The list
@@ -365,11 +412,18 @@ C<Config::XPath::NoDefaultConfigException>
 sub get_config_list($)
 {
    my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
+
+   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
+
+   $self->get_list( @_ );
+}
+
+sub get_list
+{
+   my $self = shift;
    my ( $path ) = @_;
 
-   throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
-
-   my @nodes = $self->get_config( $path );
+   my @nodes = $self->get_config_nodes( $path );
 
    my @ret;
 
@@ -462,7 +516,7 @@ sub get_sub_config_list($)
 
    throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
 
-   my @nodes = $self->get_config( $path );
+   my @nodes = $self->get_config_nodes( $path );
 
    my @ret;
 

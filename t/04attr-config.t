@@ -15,18 +15,18 @@ is( ref $c, "Config::XPath", 'ref $c' );
 
 my $aref;
 
-$aref = $c->get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" );
+$aref = $c->get_attrs( "/data/ccc/dd[\@name=\"one\"]" );
 ok( defined $aref, 'attributes defined $aref' );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attributes values' );
 
-throws_ok( sub { $aref = $c->get_config_attrs( "/data/nonexistent" ) },
+throws_ok( sub { $aref = $c->get_attrs( "/data/nonexistent" ) },
            'Config::XPath::ConfigNotFoundException',
            'get_config_attrs nonexistent throws exception' );
 
-throws_ok( sub { $aref = $c->get_config_attrs( "/data/ccc/dd" ) },
+throws_ok( sub { $aref = $c->get_attrs( "/data/ccc/dd" ) },
            'Config::XPath::BadConfigException',
            'get_config_attrs multiple nodes throws exception' );
 
-throws_ok( sub { $aref = $c->get_config_attrs( "/data/aaa/\@str" ) },
+throws_ok( sub { $aref = $c->get_attrs( "/data/aaa/\@str" ) },
            'Config::XPath::BadConfigException',
            'get_config_attrs attribute throws exception' );

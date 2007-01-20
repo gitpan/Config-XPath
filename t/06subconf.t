@@ -18,13 +18,13 @@ is( ref $sub, "Config::XPath", 'ref $sub' );
 
 my ( $s, $aref, @l );
 
-$s = $sub->get_config_string( "dd[\@name=\"one\"]/\@value" );
+$s = $sub->get_string( "dd[\@name=\"one\"]/\@value" );
 is( $s, "1", 'sub get_config_string' );
 
-$aref = $sub->get_config_attrs( "dd[\@name=\"one\"]" );
+$aref = $sub->get_attrs( "dd[\@name=\"one\"]" );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'sub get_config_attrs' );
 
-@l = $sub->get_config_list( "dd/\@name" );
+@l = $sub->get_list( "dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'sub get_config_list' );
 
 my @subs = $c->get_sub_config_list( "/data/ccc/dd" );
@@ -34,11 +34,11 @@ is( ref $subs[1], "Config::XPath", 'subconfig[1] ref type' );
 
 $sub = $subs[0];
 
-$s = $sub->get_config_string( "\@name" );
+$s = $sub->get_string( "\@name" );
 is( $s, "one", 'subs[0] get_config_string' );
 
-$aref = $sub->get_config_attrs( "i" );
+$aref = $sub->get_attrs( "i" );
 is_deeply( $aref, { '+' => "i", ord => "first" }, 'subs[0] get_config_attrs' );
 
-@l = $sub->get_config_list( "i" );
+@l = $sub->get_list( "i" );
 is_deeply( \@l, [ { '+' => "i", ord => "first" } ], 'subs[0] get_config_list' );

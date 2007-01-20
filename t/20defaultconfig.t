@@ -74,13 +74,13 @@ throws_ok( sub { @l = get_config_list( "/data/comment()" ) },
 my $sub = get_sub_config( "/data/ccc" );
 ok( defined $sub, 'subconfig defined' );
 
-$s = $sub->get_config_string( "dd[\@name=\"one\"]/\@value" );
+$s = $sub->get_string( "dd[\@name=\"one\"]/\@value" );
 is( $s, "1", 'subconfig string' );
 
-$aref = $sub->get_config_attrs( "dd[\@name=\"one\"]" );
+$aref = $sub->get_attrs( "dd[\@name=\"one\"]" );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'subconfig attrs' );
 
-@l = $sub->get_config_list( "dd/\@name" );
+@l = $sub->get_list( "dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'subconfig list' );
 
 my @subs = get_sub_config_list( "/data/ccc/dd" );

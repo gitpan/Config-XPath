@@ -12,16 +12,16 @@ $c = Config::XPath::Reloadable->new( "t/data.xml" );
 
 my $s;
 
-$s = $c->get_config_string( "/data/aaa/bbb" );
+$s = $c->get_string( "/data/aaa/bbb" );
 is( $s, "Content", 'content' );
 
 my $aref;
 
-$aref = $c->get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" );
+$aref = $c->get_attrs( "/data/ccc/dd[\@name=\"one\"]" );
 ok( defined $aref, 'attributes defined $aref' );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attributes values' );
 
 my @l;
 
-@l = $c->get_config_list( "/data/ccc/dd/\@name" );
+@l = $c->get_list( "/data/ccc/dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'list values' );

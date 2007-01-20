@@ -1,0 +1,16 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use Test::More tests => 17;
+
+use Config::XPath;
+
+my $c;
+
+$c = Config::XPath->new( "t/data.xml" );
+ok( defined $c, 'defined $c' );
+is( ref $c, "Config::XPath", 'ref $c' );
+
+$c->tie_string( my $scalar, "/data/aaa/bbb" );
+is( $scalar, "Content", 'content' );

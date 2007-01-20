@@ -190,7 +190,7 @@ sub _run_nodelist
    my $listpath = $nodelist->{listpath};
    my $namepath = $nodelist->{namepath};
 
-   my @nodes = $self->get_config( $listpath );
+   my @nodes = $self->get_config_nodes( $listpath );
 
    foreach my $n ( @nodes ) {
       my $name = $self->get_config_string( $namepath, $n );

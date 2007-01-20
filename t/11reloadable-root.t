@@ -29,7 +29,7 @@ is( ref $c, "Config::XPath::Reloadable", 'ref $c' );
 
 my $s;
 
-$s = $c->get_config_string( "/config/key" );
+$s = $c->get_string( "/config/key" );
 is( $s, "value here", 'initial content' );
 
 rewind $conffile;
@@ -40,10 +40,10 @@ print $conffile <<EOC;
 </config>
 EOC
 
-$s = $c->get_config_string( "/config/key" );
+$s = $c->get_string( "/config/key" );
 is( $s, "value here", 'reread content' );
 
 $c->reload();
 
-$s = $c->get_config_string( "/config/key" );
+$s = $c->get_string( "/config/key" );
 is( $s, "new value here", 'changed content' );

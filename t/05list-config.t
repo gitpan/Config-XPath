@@ -15,15 +15,15 @@ is( ref $c, "Config::XPath", 'ref $c' );
 
 my @l;
 
-@l = $c->get_config_list( "/data/ccc/dd/\@name" );
+@l = $c->get_list( "/data/ccc/dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'list values' );
 
-@l = $c->get_config_list( "/data/eee/ff" );
+@l = $c->get_list( "/data/eee/ff" );
 is_deeply( \@l, [ { name => 'one', '+' => 'ff' }, { name => 'two', '+' => 'ff' } ], 'list node attribute values' );
 
-@l = $c->get_config_list( "/data/nonexistent" );
+@l = $c->get_list( "/data/nonexistent" );
 is_deeply( \@l, [], 'list missing' );
 
-throws_ok( sub { @l = $c->get_config_list( "/data/comment()" ) },
+throws_ok( sub { @l = $c->get_list( "/data/comment()" ) },
            'Config::XPath::BadConfigException',
            'get_config_list unrepresentable throws exception' );

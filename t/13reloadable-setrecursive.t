@@ -12,13 +12,13 @@ use IO::Handle;
 sub add_item
 {
    my ( $grouphash, $itemname, $node ) = @_;
-   $grouphash->{$itemname} = $node->get_config_string( "." );
+   $grouphash->{$itemname} = $node->get_string( "." );
 }
 
 sub keep_item
 {
    my ( $grouphash, $itemname, $node ) = @_;
-   $grouphash->{$itemname} = $node->get_config_string( "." );
+   $grouphash->{$itemname} = $node->get_string( "." );
 }
 
 sub remove_item
