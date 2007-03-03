@@ -14,5 +14,4 @@ t/11reloadable-root.t
 t/12reloadable-set.t
 t/13reloadable-setrecursive.t
 t/20defaultconfig.t
-t/30tie.t.notyet
 t/data.xml

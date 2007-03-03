@@ -8,7 +8,7 @@ use_ok( "Config::XPath::Reloadable" );
 
 my $c;
 
-$c = Config::XPath::Reloadable->new( "t/data.xml" );
+$c = Config::XPath::Reloadable->new( filename => "t/data.xml" );
 
 my $s;
 

@@ -8,7 +8,7 @@ use Config::XPath;
 
 my $c;
 
-$c = Config::XPath->new( "t/data.xml" );
+$c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
 

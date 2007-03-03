@@ -2,14 +2,18 @@
 
 use strict;
 
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::Exception;
 
 use Config::XPath;
 
+throws_ok( sub { Config::XPath->new( ) },
+           'Config::XPath::Exception',
+           'no filename throws exception' );
+
 my $c;
 
-$c = Config::XPath->new( "t/data.xml" );
+$c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
 
@@ -33,6 +37,12 @@ is( $s, "aaa", 'function' );
 throws_ok( sub { $s = $c->get_string( "/data/nonexistent" ) },
            'Config::XPath::ConfigNotFoundException',
            'nonexistent throws exception' );
+
+lives_and( sub {
+              $s = $c->get_string( "/data/nonexistent", default => "somevalue" );
+              is( $s, "somevalue" );
+           },
+           'nonexistent with default' );
 
 throws_ok( sub { $s = $c->get_string( "/data/eee/ff" ) },
            'Config::XPath::BadConfigException',

@@ -70,7 +70,7 @@ EOC
 
 my $c;
 
-$c = Config::XPath::Reloadable->new( $conffilename );
+$c = Config::XPath::Reloadable->new( filename => $conffilename );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath::Reloadable", 'ref $c' );
 

@@ -8,6 +8,8 @@ package Config::XPath::Reloadable;
 use strict;
 use base qw( Config::XPath );
 
+our $VERSION = '0.07';
+
 =head1 NAME
 
 C<Config::XPath::Reloadable> - a subclass of C<Config::XPath> that supports
@@ -46,24 +48,27 @@ type. The event callbacks should be used instead, to obtain subconfigurations.
 
 =cut
 
-=head2 $conf = Config::XPath::Reloadable->new( $file )
+=head2 $conf = Config::XPath::Reloadable->new( %args )
 
 This function returns a new instance of a C<Config::XPath::Reloadable> object,
 initially containing the configuration in the named XML file. The file is
 closed by the time this method returns, so any changes of the file itself will
 not be noticed until the C<reload> method is called.
 
+The C<%args> hash takes the following keys
+
 =over 8
 
-=item $file
+=item filename => $file
 
 The filename of the XML file to read
 
-=item Throws
-
-C<Config::XPath::Exception>
-
 =back
+
+=head2 $conf = Config::XPath->new( $filename )
+
+This form is now deprecated; please use the C<filename> named argument
+instead. This form may be removed in some future version.
 
 =cut
 
@@ -131,11 +136,11 @@ This function associates callback closures with events that happen to a given
 nodeset in the XML data. When the function is first called, and every time the
 C<< $conf->reload() >> method is called, the nodeset given by the XPath string
 $listpath is obtained. For each node in the set, the value given by $namepath
-is obtained, by using the get_config_string() method (so it must be a plain
-text node or attribute value). The name for each node is then used to
-determine whether the nodes have been added, or kept since the last time. The
-C<add> or C<keep> callback is then called as appropriate on each node, in the
-order they appear in the current XML data.
+is obtained, by using the get_string() method (so it must be a plain text node
+or attribute value). The name for each node is then used to determine whether
+the nodes have been added, or kept since the last time. The C<add> or C<keep>
+callback is then called as appropriate on each node, in the order they appear
+in the current XML data.
 
 Finally, the list of nodes that were present last time which no longer exist
 is determined, and the C<remove> callback called for those, in no particular
@@ -193,7 +198,7 @@ sub _run_nodelist
    my @nodes = $self->get_config_nodes( $listpath );
 
    foreach my $n ( @nodes ) {
-      my $name = $self->get_config_string( $namepath, $n );
+      my $name = $self->get_string( $namepath, context => $n );
 
       my $item;
 

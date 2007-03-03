@@ -22,10 +22,12 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
+
+use Carp;
 
 =head1 NAME
 
@@ -104,42 +106,58 @@ sub read_default_config($)
 
    last if defined $default_config;
    
-   $default_config = Config::XPath->new( $file );
+   $default_config = Config::XPath->new( filename => $file );
 }
 
-=head2 $conf = Config::XPath->new( $file )
+=head2 $conf = Config::XPath->new( %args )
 
 This function returns a new instance of a C<Config::XPath> object, containing
 the configuration in the named XML file. If the given file does not exist, or
 an error occured while reading it, an exception C<Config::XPath::Exception>
 is thrown.
 
+The C<%args> hash takes the following keys:
+
 =over 8
 
-=item $file
+=item filename => $file
 
 The filename of the XML file to read
 
-=item Throws
-
-C<Config::XPath::Exception>
-
 =back
+
+=head2 $conf = Config::XPath->new( $filename )
+
+This form is now deprecated; please use the C<filename> named argument
+instead. This form may be removed in some future version.
 
 =cut
 
-sub new($)
+sub new
 {
    my $class = shift;
-   my ( $file ) = @_;
 
-   my $self = { 
-      filename => $file
-   };
+   my %args;
 
-   bless $self, $class;
+   # Cope with now-deprecated constructor form
+   if( @_ == 1 ) {
+      carp 'Use of '.__PACKAGE__.'->new( $file ) is deprecated; use ->new( filename => $file ) instead';
+      %args = ( filename => $_[0] );
+   }
+   else {
+      %args = @_;
+   }
 
-   $self->_reload_file;
+   my $self = bless { 
+   }, $class;
+   
+   if( defined $args{filename} ) {
+      $self->{filename} = $args{filename};
+      $self->_reload_file;
+   }
+   else {
+      throw Config::XPath::Exception( "Expected 'filename' argument" );
+   }
 
    return $self;
 }
@@ -158,17 +176,17 @@ sub newContext($$)
    return bless $self, $class;
 }
 
-sub find($;$)
+sub find
 {
    my $self = shift;
-   my ( $path, $context ) = @_;
+   my ( $path, %args ) = @_;
 
    my $toplevel = $self;
    $toplevel = $toplevel->{parent} while !exists $toplevel->{xp};
 
    my $xp = $toplevel->{xp};
 
-   $context ||= $self->{context};
+   my $context = $args{context} || $self->{context};
 
    if ( defined $context ) {
       return $xp->find( $path, $context );
@@ -192,10 +210,10 @@ sub get_config_nodes
    return $nodeset->get_nodelist;
 }
 
-sub get_config_node($;$)
+sub get_config_node
 {
    my $self = shift;
-   my ( $path, $context ) = @_;
+   my ( $path ) = @_;
 
    my @nodes = $self->get_config_nodes( $path );
 
@@ -232,15 +250,21 @@ C<get_sub_config> functions.
 
 =cut
 
-=head2 $str = get_config_string( $path )
+=head2 $str = get_config_string( $path, %args )
 
-=head2 $str = $config->get_string( $path )
+=head2 $str = $config->get_string( $path, %args )
 
 This function retrieves the string value of a single item in the XML file.
-This item should either be a text-valued element with no sub-elements, or an
-attribute.
+This item should either be a text-valued element with no sub-elements, an
+attribute, or an XPath expression that returns a string, integer or boolean
+value.
 
-If no suitable node was found matching the XPath query, then an exception of
+If no suitable node was found matching the XPath query but a C<default> key
+was passed in the C<%args> hash, then the value of that key is returned
+instead.
+
+If no suitable node was found matching the XPath query and no C<default>
+argument was passed, then an exception of
 C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
 node matched, or the returned node is not either a plain-text content
 containing no child nodes, or an attribute, then an exception of class
@@ -252,6 +276,20 @@ C<Config::XPath::BadConfigException> class is thrown.
 
 The XPath to the required configuration node
 
+=item %args
+
+A hash that may contain extra options to control the operation. Supports the
+following keys:
+
+=over 4
+
+=item C<default>
+
+If no XML node is found matching the path, return this value rather than
+throwing a C<Config::XPath::ConfigNotFoundException>.
+
+=back
+
 =item Throws
 
 C<Config::XPath::ConfigNotFoundException>,
@@ -262,7 +300,7 @@ C<Config::XPath::NoDefaultConfigException>
 
 =cut
 
-sub get_config_string($;$)
+sub get_config_string($%)
 {
    my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
 
@@ -274,57 +312,54 @@ sub get_config_string($;$)
 sub get_string
 {
    my $self = shift;
-   my ( $path, $context ) = @_;
+   my ( $path, %args ) = @_;
 
-   my $nodeset = $self->find( $path, $context );
+   my $nodeset = $self->find( $path, context => $args{context} );
 
-   my $ret;
+   if( !$nodeset->isa( "XML::XPath::NodeSet" ) ) {
+      return $nodeset->string_value();
+   }
 
-   if( $nodeset->isa( "XML::XPath::NodeSet" ) ) {
-      my @nodes = $nodeset->get_nodelist;
-      if ( scalar @nodes == 0 ) {
-         throw Config::XPath::ConfigNotFoundException( "No config found", $path );
+   my @nodes = $nodeset->get_nodelist;
+   if ( scalar @nodes == 0 ) {
+      return $args{default} if exists $args{default};
+
+      throw Config::XPath::ConfigNotFoundException( "No config found", $path );
+   }
+
+   if ( scalar @nodes > 1 ) {
+      throw Config::XPath::BadConfigException( "Found more than one node", $path );
+   }
+
+   my $node = $nodes[0];
+
+   if ( $node->isa( "XML::XPath::Node::Element" ) ) {
+      my @children = $node->getChildNodes();
+
+      if( !@children ) {
+         # No child nodes - treat this as an empty string
+         return "";
       }
+      elsif ( scalar @children == 1 ) {
+         my $child = shift @children;
 
-      if ( scalar @nodes > 1 ) {
-         throw Config::XPath::BadConfigException( "Found more than one node", $path );
-      }
-
-      my $node = $nodes[0];
-
-      if ( $node->isa( "XML::XPath::Node::Element" ) ) {
-         my @children = $node->getChildNodes();
-
-         if( !@children ) {
-            # No child nodes - treat this as an empty string
-            $ret = "";
+         if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
+            throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
          }
-         elsif ( scalar @children == 1 ) {
-            my $child = shift @children;
 
-            if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
-               throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
-            }
-
-            $ret = $child->string_value();
-         }
-         else {
-            throw Config::XPath::BadConfigException( "Found more than one child node", $path );
-         }
-      }
-      elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
-         $ret = $node->getValue();
+         return $child->string_value();
       }
       else {
-         my $t = ref( $node );
-         throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+         throw Config::XPath::BadConfigException( "Found more than one child node", $path );
       }
    }
-   else {
-      $ret = $nodeset->string_value();
+   elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
+      return $node->getValue();
    }
-
-   return $ret;
+   else {
+      my $t = ref( $node );
+      throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+   }
 }
 
 =head2 $attrs = get_config_attrs( $path )
@@ -447,7 +482,9 @@ sub get_list
    return @ret;
 }
 
-=head2 get_sub_config( $path )
+=head2 $subconfig = get_sub_config( $path )
+
+=head2 $subconfig = $config->get_sub_config( $path )
 
 This function constructs a new C<Config::XPath> object whose context is at
 the single node selected by the XPath query. The newly constructed child
@@ -487,7 +524,9 @@ sub get_sub_config($)
    return $class->newContext( $self, $node );
 }
 
-=head2 get_sub_config_list( $path )
+=head2 @subconfigs = get_sub_config_list( $path )
+
+=head2 @subconfigs = $config->get_sub_config_list( $path )
 
 This function constructs a list of new C<Config::XPath> objects whose context
 is at each node selected by the XPath query. The array of newly constructed
