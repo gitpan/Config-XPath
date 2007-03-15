@@ -12,9 +12,11 @@ my $build = Module::Build->new
                  'XML::XPath' => 0
                },
    build_requires => {
+                 'Test::More' => 0,
                  'Test::Exception' => 0,
                },
    license => 'perl',
+   create_makefile_pl => 'traditional',
   );
   
 $build->create_build_script;

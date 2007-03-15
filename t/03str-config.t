@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 15;
+use Test::More tests => 18;
 use Test::Exception;
 
 use Config::XPath;
@@ -13,11 +13,23 @@ throws_ok( sub { Config::XPath->new( ) },
 
 my $c;
 
-$c = Config::XPath->new( filename => "t/data.xml" );
+$c = Config::XPath->new( xml => <<EOXML );
+<data>
+  <string>Value</string>
+</data>
+EOXML
+
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
 
 my $s;
+
+$s = $c->get_string( "/data/string" );
+is( $s, "Value", 'content from inline XML' );
+
+$c = Config::XPath->new( filename => "t/data.xml" );
+ok( defined $c, 'defined $c' );
+is( ref $c, "Config::XPath", 'ref $c' );
 
 $s = $c->get_string( "/data/aaa/bbb" );
 is( $s, "Content", 'content' );

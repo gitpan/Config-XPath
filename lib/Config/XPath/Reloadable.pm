@@ -1,14 +1,14 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2006 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2006,2007 -- leonerd@leonerd.org.uk
 
 package Config::XPath::Reloadable;
 
 use strict;
 use base qw( Config::XPath );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 NAME
 
@@ -75,7 +75,13 @@ instead. This form may be removed in some future version.
 sub new
 {
    my $class = shift;
-   my $self = $class->SUPER::new( @_ );
+   my %args = @_;
+
+   if( !defined $args{filename} ) {
+      throw Config::XPath::Exception( "Expected 'filename' argument" );
+   }
+
+   my $self = $class->SUPER::new( %args );
 
    $self->{nodelists} = [];
 

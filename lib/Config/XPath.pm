@@ -1,7 +1,7 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2005,2006 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2005-2007 -- leonerd@leonerd.org.uk
 
 package Config::XPath;
 
@@ -22,7 +22,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -124,6 +124,10 @@ The C<%args> hash takes the following keys:
 
 The filename of the XML file to read
 
+=item xml => $xml
+
+A string containing XML data
+
 =back
 
 =head2 $conf = Config::XPath->new( $filename )
@@ -155,8 +159,13 @@ sub new
       $self->{filename} = $args{filename};
       $self->_reload_file;
    }
+   elsif( defined $args{xml} ) {
+      my $xp = XML::XPath->new( xml => $args{xml} );
+      throw Config::XPath::Exception( "Cannot parse string", undef ) unless $xp;
+      $self->{xp} = $xp;
+   }
    else {
-      throw Config::XPath::Exception( "Expected 'filename' argument" );
+      throw Config::XPath::Exception( "Expected 'filename' or 'xml' argument" );
    }
 
    return $self;

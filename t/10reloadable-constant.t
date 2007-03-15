@@ -2,9 +2,14 @@
 
 use strict;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
+use Test::Exception;
 
 use_ok( "Config::XPath::Reloadable" );
+
+throws_ok( sub { Config::XPath::Reloadable->new( xml => "<data>foo</data>" ) },
+           "Config::XPath::Exception",
+           'reloadable with no filename throws exception' );
 
 my $c;
 
