@@ -8,7 +8,7 @@ package Config::XPath::Reloadable;
 use strict;
 use base qw( Config::XPath );
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 NAME
 

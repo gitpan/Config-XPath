@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 18;
+use Test::More tests => 21;
 use Test::Exception;
 
 use Config::XPath;
@@ -16,6 +16,7 @@ my $c;
 $c = Config::XPath->new( xml => <<EOXML );
 <data>
   <string>Value</string>
+  <other attr="one">Two</other>
 </data>
 EOXML
 
@@ -26,6 +27,15 @@ my $s;
 
 $s = $c->get_string( "/data/string" );
 is( $s, "Value", 'content from inline XML' );
+
+$s = $c->get_string( "/data/string/text()" );
+is( $s, "Value", 'content from inline XML by text() node' );
+
+$s = $c->get_string( "/data/other/text()" );
+is( $s, "Two", 'content from inline XML by text() node with attrs' );
+
+$s = $c->get_string( "/data/other" );
+is( $s, "Two", 'content from inline XML node with attrs' );
 
 $c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );

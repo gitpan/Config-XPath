@@ -15,6 +15,7 @@ our @EXPORT = qw(
    get_config_string
    get_config_attrs
    get_config_list
+   get_config_map
 
    get_sub_config
    get_sub_config_list
@@ -22,7 +23,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -251,6 +252,60 @@ sub get_node_attrs($)
    return \%attrs;
 }
 
+sub convert_string
+{
+   my $self = shift;
+   my ( $nodeset, $path, %args ) = @_;
+
+   if( !$nodeset->isa( "XML::XPath::NodeSet" ) ) {
+      return $nodeset->string_value();
+   }
+
+   my @nodes = $nodeset->get_nodelist;
+   if ( scalar @nodes == 0 ) {
+      return $args{default} if exists $args{default};
+
+      throw Config::XPath::ConfigNotFoundException( "No config found", $path );
+   }
+
+   if ( scalar @nodes > 1 ) {
+      throw Config::XPath::BadConfigException( "Found more than one node", $path );
+   }
+
+   my $node = $nodes[0];
+
+   if ( $node->isa( "XML::XPath::Node::Element" ) ) {
+      my @children = $node->getChildNodes();
+
+      if( !@children ) {
+         # No child nodes - treat this as an empty string
+         return "";
+      }
+      elsif ( scalar @children == 1 ) {
+         my $child = shift @children;
+
+         if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
+            throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
+         }
+
+         return $child->string_value();
+      }
+      else {
+         throw Config::XPath::BadConfigException( "Found more than one child node", $path );
+      }
+   }
+   elsif( $node->isa( "XML::XPath::Node::Text" ) ) {
+      return $node->getValue();
+   }
+   elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
+      return $node->getValue();
+   }
+   else {
+      my $t = ref( $node );
+      throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+   }
+}
+
 =head1 METHODS
 
 Each of the following can be called either as a static function, or as a
@@ -325,50 +380,7 @@ sub get_string
 
    my $nodeset = $self->find( $path, context => $args{context} );
 
-   if( !$nodeset->isa( "XML::XPath::NodeSet" ) ) {
-      return $nodeset->string_value();
-   }
-
-   my @nodes = $nodeset->get_nodelist;
-   if ( scalar @nodes == 0 ) {
-      return $args{default} if exists $args{default};
-
-      throw Config::XPath::ConfigNotFoundException( "No config found", $path );
-   }
-
-   if ( scalar @nodes > 1 ) {
-      throw Config::XPath::BadConfigException( "Found more than one node", $path );
-   }
-
-   my $node = $nodes[0];
-
-   if ( $node->isa( "XML::XPath::Node::Element" ) ) {
-      my @children = $node->getChildNodes();
-
-      if( !@children ) {
-         # No child nodes - treat this as an empty string
-         return "";
-      }
-      elsif ( scalar @children == 1 ) {
-         my $child = shift @children;
-
-         if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
-            throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
-         }
-
-         return $child->string_value();
-      }
-      else {
-         throw Config::XPath::BadConfigException( "Found more than one child node", $path );
-      }
-   }
-   elsif( $node->isa( "XML::XPath::Node::Attribute" ) ) {
-      return $node->getValue();
-   }
-   else {
-      my $t = ref( $node );
-      throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
-   }
+   return $self->convert_string( $nodeset, $path, %args );
 }
 
 =head2 $attrs = get_config_attrs( $path )
@@ -473,12 +485,14 @@ sub get_list
 
    foreach my $node ( @nodes ) {
       my $val;
-      if ( $node->isa( "XML::XPath::Node::Attribute" ) ) {
-         # Get just the string value
+      if ( $node->isa( "XML::XPath::Node::Element" ) ) {
+         $val = get_node_attrs( $node );
+      }
+      elsif ( $node->isa( "XML::XPath::Node::Text" ) ) {
          $val = $node->getValue();
       }
-      elsif ( $node->isa( "XML::XPath::Node::Element" ) ) {
-         $val = get_node_attrs( $node );
+      elsif ( $node->isa( "XML::XPath::Node::Attribute" ) ) {
+         $val = $node->getValue();
       }
       else {
          my $t = ref( $node );
@@ -489,6 +503,74 @@ sub get_list
    }
 
    return @ret;
+}
+
+=head2 $map = get_config_map( $listpath, $keypath, $valuepath )
+
+=head2 $map = $config->get_map( $listpath, $keypath, $valuepath )
+
+This function obtains a map, returned as a hash, containing one entry for each
+node returned by the C<$listpath> search, where the key and value are given by
+the C<$keypath> and C<$valuepath> within each node. It is not an error for no
+nodes to match the C<$listpath>.
+
+The result of the C<$listpath> query must be a nodeset. The result of the
+C<$keypath> and C<$valuepath> queries for each node in the list must be
+convertable to a string, by the same rules as the C<get_string()> method.
+
+=over 8
+
+=item $listpath
+
+The XPath to generate the nodeset
+
+=item $keypath
+
+The XPath within each node to generate the key
+
+=item $valuepath
+
+The XPath within each node to generate the value
+
+=item Throws
+
+C<Config::XPath::ConfigNotFoundException>,
+C<Config::XPath::BadConfigException>,
+C<Config::XPath::NoDefaultConfigException>
+
+=back
+
+=cut
+
+sub get_config_map($$$)
+{
+   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
+
+   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
+
+   $self->get_map( @_ );
+}
+
+sub get_map
+{
+   my $self = shift;
+   my ( $listpath, $keypath, $valuepath ) = @_;
+
+   my @nodes = $self->get_config_nodes( $listpath );
+
+   my %ret;
+
+   foreach my $node ( @nodes ) {
+      my $keynode = $self->find( $keypath, context => $node );
+      my $key = $self->convert_string( $keynode, $keypath );
+
+      my $valuenode = $self->find( $valuepath, context => $node );
+      my $value = $self->convert_string( $valuenode, $valuepath );
+
+      $ret{$key} = $value;
+   }
+
+   return \%ret;
 }
 
 =head2 $subconfig = get_sub_config( $path )

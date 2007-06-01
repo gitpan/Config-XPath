@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 25;
+use Test::More tests => 27;
 use Test::Exception;
 
 use Config::XPath;
@@ -70,6 +70,14 @@ is_deeply( \@l, [], 'list of missing values' );
 throws_ok( sub { @l = get_config_list( "/data/comment()" ) },
            'Config::XPath::BadConfigException',
            'list of comment throws exception' );
+
+my $m;
+
+$m = get_config_map( "/data/eee/ff", '@name', '.' );
+is_deeply( $m, { one => 1, two => 2 }, 'map values' );
+
+$m = get_config_map( "/data/nonodes", '@name', '@value' );
+is_deeply( $m, {}, 'map of missing values' );
 
 my $sub = get_sub_config( "/data/ccc" );
 ok( defined $sub, 'subconfig defined' );

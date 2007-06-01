@@ -9,10 +9,11 @@ t/02exceptions.t
 t/03str-config.t
 t/04attr-config.t
 t/05list-config.t
-t/06subconf.t
-t/10reloadable-constant.t
-t/11reloadable-root.t
-t/12reloadable-set.t
-t/13reloadable-setrecursive.t
-t/20defaultconfig.t
+t/06map-config.t
+t/10subconf.t
+t/20reloadable-constant.t
+t/21reloadable-root.t
+t/22reloadable-set.t
+t/23reloadable-setrecursive.t
+t/30defaultconfig.t
 t/data.xml

@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 
 use Config::XPath;
@@ -17,6 +17,9 @@ my @l;
 
 @l = $c->get_list( "/data/ccc/dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'list values' );
+
+@l = $c->get_list( "/data/eee/ff/text()" );
+is_deeply( \@l, [ qw( 1 2 ) ], 'list of text() values' );
 
 @l = $c->get_list( "/data/eee/ff" );
 is_deeply( \@l, [ { name => 'one', '+' => 'ff' }, { name => 'two', '+' => 'ff' } ], 'list node attribute values' );
