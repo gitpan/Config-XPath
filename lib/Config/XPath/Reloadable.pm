@@ -8,12 +8,41 @@ package Config::XPath::Reloadable;
 use strict;
 use base qw( Config::XPath );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 NAME
 
 C<Config::XPath::Reloadable> - a subclass of C<Config::XPath> that supports
 reloading
+
+=head1 SYNOPSIS
+
+ use Config::XPath::Reloadable;
+
+ my $conf = Config::XPath::Reloadable->new( filename => 'addressbook.xml' );
+
+ $SIG{HUP} = sub { $conf->reload };
+
+ $conf->associate_nodeset( '//user', '@name',
+    add => sub {
+       my ( $name, $user_conf ) = @_;
+       print "New user called $name, whose phone is " .
+          $user_conf->get_string( '@phone' ) . "\n";
+    },
+
+    keep => sub {
+       my ( $name, $user_conf ) = @_;
+       print "User $name phone is now " .
+          $user_conf->get_string( '@phone' ) . "\n";
+    },
+
+    remove => sub {
+       my ( $name ) = @_;
+       print "User $name has now gone\n";
+    },
+ );
+
+ # Main body of code here ...
 
 =head1 DESCRIPTION
 
@@ -65,11 +94,6 @@ The filename of the XML file to read
 
 =back
 
-=head2 $conf = Config::XPath->new( $filename )
-
-This form is now deprecated; please use the C<filename> named argument
-instead. This form may be removed in some future version.
-
 =cut
 
 sub new
@@ -116,10 +140,6 @@ sub reload
    if( exists $self->{filename} ) {
       $self->_reload_file;
    }
-   else {
-      $self->{xp} = $self->{parent}->{xp};
-      $self->{context} = $self->get_config_node( $self->{path} );
-   }
 
    $self->_run_nodelist( $_ ) foreach @{ $self->{nodelists} };
 }
@@ -142,28 +162,58 @@ This function associates callback closures with events that happen to a given
 nodeset in the XML data. When the function is first called, and every time the
 C<< $conf->reload() >> method is called, the nodeset given by the XPath string
 $listpath is obtained. For each node in the set, the value given by $namepath
-is obtained, by using the get_string() method (so it must be a plain text node
-or attribute value). The name for each node is then used to determine whether
-the nodes have been added, or kept since the last time. The C<add> or C<keep>
-callback is then called as appropriate on each node, in the order they appear
-in the current XML data.
+is obtained, by using the get_string() method (so it must be a plain text
+node, attribute value, or any other XPath query that gives a string value).
+The name for each node is then used to determine whether the nodes have been
+added, or kept since the last time. The C<add> or C<keep> callback is then
+called as appropriate on each node, in the order they appear in the current
+XML data.
 
 Finally, the list of nodes that were present last time which no longer exist
 is determined, and the C<remove> callback called for those, in no particular
 order.
 
-The signature for each callback is as follows:
+When this method is called, the C<add> callbacks will be invoked before the
+method returns, for any matching items found in the data.
+
+The C<%events> hash should be passed keys for the following events:
+
+=over 8
+
+=item add => CODE
+
+Called when a node is returned in the list that has a name that wasn't present
+on the last loading of the file. Called as:
 
  $add->( $name, $node )
 
+=item keep => CODE
+
+Called when a node is returned in the list that has a name that was present on
+the last loading of the file. Note that the contents of this node may or may
+not have changed; the containing program would have to requery the config node
+to determine if this is the case. Called as:
+
  $keep->( $name, $node )
+
+=item remove => CODE
+
+Called at the end of the list enumeration, when a node was present last time
+but is not present in the latest loading of the file. Called as:
 
  $remove->( $name )
 
-The $name parameter will contain the string value returned by the $namepath
-path on each node, and the $node parameter will contain a
+=back
+
+In each callback, the $name parameter will contain the string value returned by
+the $namepath path on each node, and the $node parameter will contain a
 C<Config::XPath::Reloadable> object reference, with the XPath context at the
 respective XML data node.
+
+If further recursive nodesets are associated on the inner config node given
+to the C<add> or C<keep> callbacks, then the C<keep> callback should invoke
+the C<reload> method on the node, to ensure full recursive reloading of the
+content.
 
 =cut
 
@@ -211,16 +261,13 @@ sub _run_nodelist
       if( exists $lastitems{$name} ) {
          $item = delete $lastitems{$name};
 
+         $item->{xp} = $self->{xp};
          $item->{context} = $n;
 
          $nodelist->{keep}->( $name, $item ) if defined $nodelist->{keep};
       }
       else {
          $item = $class->newContext( $self, $n );
-
-         # Escape quote marks and backslashes
-         ( my $quotedname = $name ) =~ s{(['\\])}{\\$1}g;
-         $item->{path} = $listpath . "[$namepath='$quotedname']";
 
          $nodelist->{add}->( $name, $item ) if defined $nodelist->{add};
       }
@@ -235,6 +282,7 @@ sub _run_nodelist
    $nodelist->{items} = \%newitems;
 }
 
+# Keep perl happy; keep Britain tidy
 1;
 
 __END__

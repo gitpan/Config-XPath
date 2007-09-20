@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 use Config::XPath::Reloadable;
 
@@ -56,13 +56,21 @@ sub remove_group
    delete $groups{$name};
 }
 
-sub rewind($) { seek shift, 0, 0; }
+sub write_file
+{
+   my ( $fh, $content ) = @_;
+
+   truncate $fh, 0;
+   seek $fh, 0, 0;
+
+   print $fh $content;
+}
 
 my ( $conffile, $conffilename ) = tempfile();
 defined $conffile or die "Could not open a tempfile for testing - $!";
 $conffile->autoflush( 1 );
 
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <group name="a"></group>
 </config>
@@ -82,10 +90,7 @@ $c->associate_nodeset( '/config/group', '@name',
 
 is_deeply( \%groups, { a => {} }, 'initial' );
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <group name="a">
     <item name="foo">FOO</item>
@@ -99,10 +104,7 @@ is_deeply( \%groups,
            { a => { foo => 'FOO' } },
            '1st reload' );
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <group name="a">
     <item name="foo">FOO the second</item>
@@ -121,10 +123,7 @@ is_deeply( \%groups,
              b => { baz => 'BAZ' } },
            '2nd reload' );
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <group name="b">
     <item name="baz">BAZ 2nd</item>
@@ -142,10 +141,7 @@ is_deeply( \%groups,
              b => { baz => 'BAZ 2nd' } },
            '3rd reload' );
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <group name="b">
     <item name="baz">BAZ 2nd</item>
@@ -158,3 +154,37 @@ $c->reload();
 is_deeply( \%groups, 
            { b => { baz => 'BAZ 2nd' } },
            '4th reload' );
+
+# Now again with all relative paths
+
+%groups = ();
+
+write_file $conffile, <<EOC;
+<config>
+  <group name="a"></group>
+</config>
+EOC
+
+$c = Config::XPath::Reloadable->new( filename => $conffilename );
+
+$c->associate_nodeset( 'config/group', '@name',
+   add    => \&add_group,
+   keep   => \&keep_group,
+   remove => \&remove_group,
+);
+
+is_deeply( \%groups, { a => {} }, 'initial' );
+
+write_file $conffile, <<EOC;
+<config>
+  <group name="a">
+    <item name="foo">FOO</item>
+  </group>
+</config>
+EOC
+
+$c->reload();
+
+is_deeply( \%groups, 
+           { a => { foo => 'FOO' } },
+           '1st reload' );

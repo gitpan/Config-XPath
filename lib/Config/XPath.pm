@@ -23,7 +23,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -34,6 +34,34 @@ use Carp;
 
 C<Config::XPath> - a module for retrieving configuration data from XML files
 by using XPath queries
+
+=head1 SYNOPSIS
+
+ use Config::XPath;
+
+ my $conf = Config::XPath->new( filename => 'addressbook.xml' );
+
+ ## Basic data retrieval
+
+ my $bob_phone = $conf->get_string( '//user[@name="bob"]/@phone' );
+
+ my %jim_details = $conf->get_attrs( '//user[@name="jim"]' );
+
+ my @everyone_with_fax = $conf->get_list( '//user[@fax]' );
+ print " $_ has a fax\n" for @everyone_with_fax;
+
+ my $phone_map = $conf->get_map( '//user', '@name', '@phone' );
+ print " $_ has a phone: $phone_map->{$_}\n" for sort keys %$phone_map;
+
+ ## Subconfigurations
+
+ my $james_config = $conf->get_sub_config( '//user[@name="james"]' );
+ my $james_phone = $james_config->get_string( '@phone' );
+
+ foreach my $user_config ( $conf->get_sub_config_list( '//user[@email]' ) ) {
+    my $town = $user_config->get_string( 'address/town' );
+    print "Someone in $town has an email account\n";
+ }
 
 =head1 DESCRIPTION
 
@@ -110,6 +138,8 @@ sub read_default_config($)
    $default_config = Config::XPath->new( filename => $file );
 }
 
+=head1 CONSTRUCTOR
+
 =head2 $conf = Config::XPath->new( %args )
 
 This function returns a new instance of a C<Config::XPath> object, containing
@@ -130,11 +160,6 @@ The filename of the XML file to read
 A string containing XML data
 
 =back
-
-=head2 $conf = Config::XPath->new( $filename )
-
-This form is now deprecated; please use the C<filename> named argument
-instead. This form may be removed in some future version.
 
 =cut
 

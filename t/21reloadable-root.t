@@ -9,13 +9,21 @@ use Config::XPath::Reloadable;
 use File::Temp qw( tempfile );
 use IO::Handle;
 
-sub rewind($) { seek shift, 0, 0; }
+sub write_file
+{
+   my ( $fh, $content ) = @_;
+
+   truncate $fh, 0;
+   seek $fh, 0, 0;
+
+   print $fh $content;
+}
 
 my ( $conffile, $conffilename ) = tempfile();
 defined $conffile or die "Could not open a tempfile for testing - $!";
 $conffile->autoflush( 1 );
 
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <key>value here</key>
 </config>
@@ -32,9 +40,7 @@ my $s;
 $s = $c->get_string( "/config/key" );
 is( $s, "value here", 'initial content' );
 
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <key>new value here</key>
 </config>

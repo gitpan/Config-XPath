@@ -9,13 +9,21 @@ use Config::XPath::Reloadable;
 use File::Temp qw( tempfile );
 use IO::Handle;
 
-sub rewind($) { seek shift, 0, 0; }
+sub write_file
+{
+   my ( $fh, $content ) = @_;
+
+   truncate $fh, 0;
+   seek $fh, 0, 0;
+
+   print $fh $content;
+}
 
 my ( $conffile, $conffilename ) = tempfile();
 defined $conffile or die "Could not open a tempfile for testing - $!";
 $conffile->autoflush( 1 );
 
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <key name="1">value here</key>
 </config>
@@ -47,10 +55,7 @@ is_deeply( \%events, { 1 => 'add' }, 'initial events' );
 my %orig_nodes = %nodes;
 %events = ();
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <key name="1">value here</key>
   <key name="2">value here</key>
@@ -65,10 +70,7 @@ is( $nodes{1}, $orig_nodes{1}, '1st reload node equality' );
 %orig_nodes = %nodes;
 %events = ();
 
-truncate $conffile, 0;
-rewind $conffile;
-
-print $conffile <<EOC;
+write_file $conffile, <<EOC;
 <config>
   <key name="2">value here</key>
 </config>
