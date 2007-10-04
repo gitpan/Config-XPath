@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 
 use Config::XPath::Reloadable;
 
@@ -188,3 +188,9 @@ $c->reload();
 is_deeply( \%groups, 
            { a => { foo => 'FOO' } },
            '1st reload' );
+
+$c->reload();
+
+is_deeply( \%groups, 
+           { a => { foo => 'FOO' } },
+           '2nd reload' );

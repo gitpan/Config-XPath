@@ -8,7 +8,7 @@ package Config::XPath::Reloadable;
 use strict;
 use base qw( Config::XPath );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 NAME
 
@@ -66,11 +66,6 @@ C<Config::XPath::Reloadable> object with its XPath context pointing at the
 corresponding node in the XML data, much like the C<get_sub_config()> method
 does.
 
-Because of the dynamically-reloadable nature of objects in this class, the
-C<get_sub_config()> and C<get_sub_config_list()> methods are no longer
-allowed. They will instead throw exceptions of C<Config::XPath::Exception>
-type. The event callbacks should be used instead, to obtain subconfigurations.
-
 =cut
 
 =head1 CONSTRUCTOR
@@ -114,6 +109,22 @@ sub new
 
 =head1 METHODS
 
+All of the simple data access methods of L<Config::XPath> are supported:
+
+ $str = $config->get_string( $path, %args )
+
+ $attrs = $config->get_attrs( $path )
+
+ @values = $config->get_list( $path )
+
+ $map = $config->get_map( $listpath, $keypath, $valuepath )
+
+Because of the dynamically-reloadable nature of objects in this class, the
+C<get_sub_config()> and C<get_sub_config_list()> methods are no longer
+allowed. They will instead throw exceptions of C<Config::XPath::Exception>
+type. The event callbacks in nodelists and nodesets should be used instead, to
+obtain subconfigurations.
+
 =cut
 
 =head2 $conf->reload()
@@ -141,7 +152,9 @@ sub reload
       $self->_reload_file;
    }
 
-   $self->_run_nodelist( $_ ) foreach @{ $self->{nodelists} };
+   foreach my $nodelist ( @{ $self->{nodelists} } ) {
+      $self->_run_nodelist( $nodelist );
+   }
 }
 
 # Override - no POD
@@ -156,18 +169,13 @@ sub get_sub_config_list
    throw Config::XPath::Exception( "Can't generate subconfig list of a " . __PACKAGE__ );
 }
 
-=head2 $conf->associate_nodeset( $listpath, $namepath, %events )
+=head2 $conf->associate_nodelist( $listpath, %events )
 
-This function associates callback closures with events that happen to a given
-nodeset in the XML data. When the function is first called, and every time the
-C<< $conf->reload() >> method is called, the nodeset given by the XPath string
-$listpath is obtained. For each node in the set, the value given by $namepath
-is obtained, by using the get_string() method (so it must be a plain text
-node, attribute value, or any other XPath query that gives a string value).
-The name for each node is then used to determine whether the nodes have been
-added, or kept since the last time. The C<add> or C<keep> callback is then
-called as appropriate on each node, in the order they appear in the current
-XML data.
+This method associates callback closures with events that happen to a given
+nodelist in the XML data. When the function is first called, and every time
+the C<< $conf->reload() >> method is called, the nodeset given by the XPath
+string $listpath is obtained. The C<add> or C<keep> callback is then called as
+appropriate on each node, in the order they appear in the current XML data.
 
 Finally, the list of nodes that were present last time which no longer exist
 is determined, and the C<remove> callback called for those, in no particular
@@ -175,6 +183,74 @@ order.
 
 When this method is called, the C<add> callbacks will be invoked before the
 method returns, for any matching items found in the data.
+
+The C<%events> hash should be passed keys for the following events:
+
+=over 8
+
+=item add => CODE
+
+Called when a node is returned in the list that has a name that wasn't present
+on the last loading of the file. Called as:
+
+ $add->( $index, $node )
+
+=item keep => CODE
+
+Called when a node is returned in the list that has a name that was present on
+the last loading of the file. Note that the contents of this node may or may
+not have changed; the containing program would have to requery the config node
+to determine if this is the case. Called as:
+
+ $keep->( $index, $node )
+
+=item remove => CODE
+
+Called at the end of the list enumeration, when a node was present last time
+but is not present in the latest loading of the file. Called as:
+
+ $remove->( $index )
+
+=back
+
+In each callback, the $index parameter will contain the index of the config
+nodewithin the nodelist given by the $listpath, and the $node parameter will
+contain a C<Config::XPath::Reloadable> object reference, with the XPath
+context at the respective XML data node.
+
+If further recursive nodesets are associated on the inner config node given
+to the C<add> or C<keep> callbacks, then the C<keep> callback should invoke
+the C<reload> method on the node, to ensure full recursive reloading of the
+content.
+
+=cut
+
+sub associate_nodelist
+{
+   my $self = shift;
+   my ( $listpath, %events ) = @_;
+
+   my %nodelistitem = (
+      listpath => $listpath,
+   );
+
+   foreach (qw( add keep remove )) {
+      $nodelistitem{$_} = $events{$_} if exists $events{$_};
+   }
+
+   push @{ $self->{nodelists} }, \%nodelistitem;
+
+   $self->_run_nodelist( \%nodelistitem );
+}
+
+=head2 $conf->associate_nodeset( $listpath, $namepath, %events )
+
+This method is similar in operation to C<associate_nodelist>, except that
+each node in the set is identified by some value, rather than just its
+index within the list. The value given by $namepath is obtained by using the
+get_string() method (so it must be a plain text node, attribute value, or any
+other XPath query that gives a string value). This name is then used to
+determine whether the node has been added, or kept since the last time.
 
 The C<%events> hash should be passed keys for the following events:
 
@@ -209,11 +285,6 @@ In each callback, the $name parameter will contain the string value returned by
 the $namepath path on each node, and the $node parameter will contain a
 C<Config::XPath::Reloadable> object reference, with the XPath context at the
 respective XML data node.
-
-If further recursive nodesets are associated on the inner config node given
-to the C<add> or C<keep> callbacks, then the C<keep> callback should invoke
-the C<reload> method on the node, to ensure full recursive reloading of the
-content.
 
 =cut
 
@@ -253,8 +324,10 @@ sub _run_nodelist
 
    my @nodes = $self->get_config_nodes( $listpath );
 
-   foreach my $n ( @nodes ) {
-      my $name = $self->get_string( $namepath, context => $n );
+   foreach my $index ( 0 .. $#nodes ) {
+      my $n = $nodes[$index];
+
+      my $name = defined $namepath ? $self->get_string( $namepath, context => $n ) : $index;
 
       my $item;
 

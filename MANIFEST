@@ -15,5 +15,6 @@ t/20reloadable-constant.t
 t/21reloadable-root.t
 t/22reloadable-set.t
 t/23reloadable-setrecursive.t
+t/24reloadable-list.t
 t/30defaultconfig.t
 t/data.xml

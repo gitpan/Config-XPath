@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 use Config::XPath::Reloadable;
 
@@ -41,9 +41,11 @@ my %nodes;
 $c->associate_nodeset( '/config/key', '@name',
    add    => sub { $events{$_[0]} = 'add';
                    $nodes{$_[0]} = $_[1];
+                   undef $_; # be evil and test for callers using this in loop iterators
                  },
    keep   => sub { $events{$_[0]} = 'keep';
                    $nodes{$_[0]} = $_[1];
+                   undef $_; # be evil and test for callers using this in loop iterators
                  },
    remove => sub { $events{$_[0]} = 'remove';
                    delete $nodes{$_[0]};
@@ -80,3 +82,15 @@ $c->reload();
 
 is_deeply( \%events, { 1 => 'remove', 2 => 'keep' }, '2nd reload events' );
 is( $nodes{2}, $orig_nodes{2}, '2nd reload node equality' );
+
+%events = ();
+
+$c->reload();
+
+is_deeply( \%events, { 2 => 'keep' }, '3rd reload events' );
+
+%events = ();
+
+$c->reload();
+
+is_deeply( \%events, { 2 => 'keep' }, '4th reload events' );

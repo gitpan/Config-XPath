@@ -23,7 +23,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
