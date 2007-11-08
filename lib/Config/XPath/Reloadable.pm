@@ -8,7 +8,7 @@ package Config::XPath::Reloadable;
 use strict;
 use base qw( Config::XPath );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 =head1 NAME
 
@@ -63,8 +63,7 @@ by forming a tree of objects which somehow maps onto the XML data tree. The
 way this is done in this class, is to use the $node parameter passed in to the
 C<add> and C<keep> event callbacks. This parameter will hold a child
 C<Config::XPath::Reloadable> object with its XPath context pointing at the
-corresponding node in the XML data, much like the C<get_sub_config()> method
-does.
+corresponding node in the XML data, much like the C<get_sub()> method does.
 
 =cut
 
@@ -120,10 +119,10 @@ All of the simple data access methods of L<Config::XPath> are supported:
  $map = $config->get_map( $listpath, $keypath, $valuepath )
 
 Because of the dynamically-reloadable nature of objects in this class, the
-C<get_sub_config()> and C<get_sub_config_list()> methods are no longer
-allowed. They will instead throw exceptions of C<Config::XPath::Exception>
-type. The event callbacks in nodelists and nodesets should be used instead, to
-obtain subconfigurations.
+C<get_sub()> and C<get_sub_list()> methods are no longer allowed. They will
+instead throw exceptions of C<Config::XPath::Exception> type. The event
+callbacks in nodelists and nodesets should be used instead, to obtain
+subconfigurations.
 
 =cut
 
@@ -158,13 +157,13 @@ sub reload
 }
 
 # Override - no POD
-sub get_sub_config
+sub get_sub
 {
    throw Config::XPath::Exception( "Can't generate subconfig of a " . __PACKAGE__ );
 }
 
 # Override - no POD
-sub get_sub_config_list
+sub get_sub_list
 {
    throw Config::XPath::Exception( "Can't generate subconfig list of a " . __PACKAGE__ );
 }

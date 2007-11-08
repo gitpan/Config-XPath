@@ -23,7 +23,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -55,10 +55,10 @@ by using XPath queries
 
  ## Subconfigurations
 
- my $james_config = $conf->get_sub_config( '//user[@name="james"]' );
+ my $james_config = $conf->get_sub( '//user[@name="james"]' );
  my $james_phone = $james_config->get_string( '@phone' );
 
- foreach my $user_config ( $conf->get_sub_config_list( '//user[@email]' ) ) {
+ foreach my $user_config ( $conf->get_sub_list( '//user[@email]' ) ) {
     my $town = $user_config->get_string( 'address/town' );
     print "Someone in $town has an email account\n";
  }
@@ -66,14 +66,12 @@ by using XPath queries
 =head1 DESCRIPTION
 
 This module provides easy access to configuration data stored in an XML file.
-Configuration is retrieved using XPath keys; various functions exist to
-convert the result to a variety of convenient forms. If the functions are
-called as static functions (as opposed to as object methods) then they access
-data stored in the default configuration file (details given below).
+Configuration is retrieved using XPath keys; various methods exist to
+convert the result to a variety of convenient forms.
 
-The functions are also provided as methods of objects in the C<Config::XPath>
-class. They take the same parameters as for the static functions. This allows
-access to other XML configuration files.
+If the methods are called as static functions (as opposed to as object
+methods) then they access data stored in the default configuration file
+(details given below).
 
 =cut
 
@@ -83,60 +81,10 @@ By default, the XPath context is at the root node of the XML document. If some
 other context is required, then a subconfiguration object can be used. This is
 a child C<Config::XPath> object, built from an XPath query on the parent.
 Whatever node the query matches becomes the context for the new object. The
-functions C<get_sub_config()> and C<get_sub_config_list()> perform this task;
-the former returning a single child, and the latter returning a list of all
-matches.
+methods C<get_sub()> and C<get_sub_list()> perform this task; the former
+returning a single child, and the latter returning a list of all matches.
 
 =cut
-
-my $default_config;
-
-=head2 Default Configuration File
-
-In the case of calling as static functions, the default configuration is
-accessed. When the module is loaded no default configuration exists, but one
-can be loaded by calling the C<read_default_config()> function. This makes
-programs simpler to write in cases where only one configuration file is used
-by the program.
-
-=cut
-
-=head1 FUNCTIONS
-
-=cut
-
-=head2 read_default_config( $file )
-
-This function reads the default configuration file, from the location given.
-If the file is not found, or an error occurs while reading it, then an
-exception of C<Config::XPath::Exception> is thrown.
-
-The default configuration is cached, so multiple calls to this function will
-not result in multiple reads of the file; subsequent requests will be silently
-ignored, even if a different filename is given.
-
-=over 8
-
-=item $file
-
-The filename of the default configuration to load
-
-=item Throws
-
-C<Config::XPath::Exception>
-
-=back
-
-=cut
-
-sub read_default_config($)
-{
-   my ( $file ) = @_;
-
-   last if defined $default_config;
-   
-   $default_config = Config::XPath->new( filename => $file );
-}
 
 =head1 CONSTRUCTOR
 
@@ -333,31 +281,100 @@ sub convert_string
 
 =head1 METHODS
 
-Each of the following can be called either as a static function, or as a
-method of an object returned by the C<new()> constructor, or either of the
-C<get_sub_config> functions.
+=cut
+
+=head2 $result = $config->get( $paths, %args )
+
+This method retrieves the result of one of more XPath expressions from the XML
+file. Each expression should give either a text-valued element with no
+sub-elements, an attribute, or an XPath function that returns a string,
+integer or boolean value.
+
+The C<$paths> argument should contain a data tree of ARRAY and HASH
+references, whose leaves will be the XPath expressions used. The C<$result>
+will be returned in a similar tree structure, with the leaves containing the
+value each expression yielded against the XML config. The C<%args> may contain
+a C<default> key, which should give default values for these results, also in
+a similar tree structure.
+
+If no suitable node was found matching an XPath expression and no
+corresponding C<default> value is found, then an exception of
+C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
+node is returned, or the returned node is not either a plain-text content
+containing no child nodes, or an attribute, then an exception of class
+C<Config::XPath::BadConfigException> class is thrown.
+
+=over 8
+
+=item $paths
+
+A tree data structure containing ARRAY and HASH references, and XPath
+expressions stored in plain scalars.
+
+=item %args
+
+A hash that may contain extra options to control the operation. Supports the
+following keys:
+
+=over 4
+
+=item C<default>
+
+Contains a tree in the same structure as the C<$paths>, whose leaf values
+should be returned instead of the value yielded by the XPath expression, in
+the case that no nodes match it.
+
+=back
+
+=back
 
 =cut
 
-=head2 $str = get_config_string( $path, %args )
+sub get
+{
+   my $self = shift;
+   my ( $paths, %args ) = @_;
+
+   my $context = $args{context};
+
+   if( !ref $paths ) {
+      return $self->get_string( $paths, %args );
+   }
+   elsif( ref $paths eq "ARRAY" ) {
+      my $default = delete $args{default};
+
+      my @ret;
+
+      foreach my $index ( 0 .. $#$paths ) {
+         $ret[$index] = $self->get( $paths->[$index], %args,
+            exists $default->[$index] ? (default => $default->[$index]) : ()
+         );
+      }
+
+      return \@ret;
+   }
+   elsif( ref $paths eq "HASH" ) {
+      my $default = delete $args{default};
+
+      my %ret;
+
+      foreach my $key ( keys %$paths ) {
+         $ret{$key} = $self->get( $paths->{$key}, %args,
+            exists $default->{$key} ? (default => $default->{$key}) : ()
+         );
+      }
+
+      return \%ret;
+   }
+   else {
+      croak "Expected a plain string or ARRAY or HASH reference as path, got " . ( ref $paths ) . " reference instead";
+   }
+}
 
 =head2 $str = $config->get_string( $path, %args )
 
-This function retrieves the string value of a single item in the XML file.
-This item should either be a text-valued element with no sub-elements, an
-attribute, or an XPath expression that returns a string, integer or boolean
-value.
-
-If no suitable node was found matching the XPath query but a C<default> key
-was passed in the C<%args> hash, then the value of that key is returned
-instead.
-
-If no suitable node was found matching the XPath query and no C<default>
-argument was passed, then an exception of
-C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
-node matched, or the returned node is not either a plain-text content
-containing no child nodes, or an attribute, then an exception of class
-C<Config::XPath::BadConfigException> class is thrown.
+This function is a smaller version of the C<get> method, which only works on a
+single string path.
 
 =over 8
 
@@ -379,24 +396,9 @@ throwing a C<Config::XPath::ConfigNotFoundException>.
 
 =back
 
-=item Throws
-
-C<Config::XPath::ConfigNotFoundException>,
-C<Config::XPath::BadConfigException>,
-C<Config::XPath::NoDefaultConfigException>
-
 =back
 
 =cut
-
-sub get_config_string($%)
-{
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-
-   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
-
-   $self->get_string( @_ );
-}
 
 sub get_string
 {
@@ -408,15 +410,13 @@ sub get_string
    return $self->convert_string( $nodeset, $path, %args );
 }
 
-=head2 $attrs = get_config_attrs( $path )
-
 =head2 $attrs = $config->get_attrs( $path )
 
-This function retrieves the attributes of a single element in the XML file.
-The attributes are returned in a hash, along with the name of the element
-itself, which is returned in a special key named C<'+'>. This name is not
-valid for an XML attribute, so this key will never clash with an actual value
-from the XML file.
+This method retrieves the attributes of a single element in the XML file. The
+attributes are returned in a hash, along with the name of the element itself,
+which is returned in a special key named C<'+'>. This name is not valid for an
+XML attribute, so this key will never clash with an actual value from the XML
+file.
 
 If no suitable node was found matching the XPath query, then an exception of
 C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
@@ -429,24 +429,9 @@ class C<Config::XPath::BadConfigException> class is thrown.
 
 The XPath to the required configuration node
 
-=item Throws
-
-C<Config::XPath::ConfigNotFoundException>,
-C<Config::XPath::BadConfigException>,
-C<Config::XPath::NoDefaultConfigException>
-
 =back
 
 =cut
-
-sub get_config_attrs($)
-{
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-
-   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
-
-   $self->get_attrs( @_ );
-}
 
 sub get_attrs
 {
@@ -462,66 +447,74 @@ sub get_attrs
    return get_node_attrs( $node );
 }
 
-=head2 @values = get_config_list( $path )
+=head2 @results = $config->get_list( $listpath; $valuepaths, %args )
 
-=head2 @values = $config->get_list( $path )
+This method obtains a list of nodes matching the C<$listpath> expression. For
+each node in the list, it obtains the result of the C<$valuepaths> with the
+XPath context at each node, and returns them all in a list. The C<$valuepaths>
+argument can be a single string expression, or an ARRAY or HASH tree, as for
+the C<get()> method.
 
-This function obtains a list of nodes matching the given XPath query. Unlike
-the other functions, it is not an error for no nodes to match. The list
-contains one entry for each match of the XPath query, depending on what that
-match is. Attribute nodes return their value as a plain string. Element nodes
-return a hashref, identical to that which C<get_config_attrs()> returns.
-
-If any other node type is found in the response, then an exception of 
-C<Config::XPath::BadConfigException> class is thrown.
+If the C<$valuepaths> argument is not supplied, the type of each node
+determines the value that will be returned. Element nodes return a
+hashref, identical to that which C<get_attrs()> returns. Other nodes will
+return their XPath string value.
 
 =over 8
 
-=item $path
+=item $listpath
 
-The XPath for the required configuration
+The XPath expression to generate the list of nodes.
 
-=item Throws
+=item $valuepaths
 
-C<Config::XPath::BadConfigException>,
-C<Config::XPath::NoDefaultConfigException>
+Optional. If present, the XPath expression or tree of expressions to generate
+the results.
+
+=item %args
+
+A hash that may contain extra options to control the operation. Supports the
+following keys:
+
+=over 4
+
+=item C<default>
+
+Contains a tree in the same structure as the C<$valuepaths>, whose leaf values
+should be returned instead of the value yielded by the XPath expression, in
+the case that no nodes match it.
+
+=back
 
 =back
 
 =cut
 
-sub get_config_list($)
-{
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-
-   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
-
-   $self->get_list( @_ );
-}
-
 sub get_list
 {
    my $self = shift;
-   my ( $path ) = @_;
+   my ( $listpath, $valuepaths, %args ) = @_;
 
-   my @nodes = $self->get_config_nodes( $path );
+   my @nodes = $self->get_config_nodes( $listpath );
 
    my @ret;
 
    foreach my $node ( @nodes ) {
       my $val;
-      if ( $node->isa( "XML::XPath::Node::Element" ) ) {
+
+      if ( defined $valuepaths ) {
+         $val = $self->get( $valuepaths, context => $node, %args );
+      }
+
+      elsif ( $node->isa( "XML::XPath::Node::Element" ) ) {
          $val = get_node_attrs( $node );
       }
-      elsif ( $node->isa( "XML::XPath::Node::Text" ) ) {
-         $val = $node->getValue();
-      }
-      elsif ( $node->isa( "XML::XPath::Node::Attribute" ) ) {
-         $val = $node->getValue();
+      elsif ( $node->isa( "XML::XPath::Node::Text" ) or $node->isa( "XML::XPath::Node::Attribute" ) ) {
+         $val = $self->convert_string( $node, $listpath );
       }
       else {
          my $t = ref( $node );
-         throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+         throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $listpath );
       }
 
       push @ret, $val;
@@ -530,18 +523,21 @@ sub get_list
    return @ret;
 }
 
-=head2 $map = get_config_map( $listpath, $keypath, $valuepath )
+=head2 $map = $config->get_map( $listpath, $keypath, $valuepaths, %args )
 
-=head2 $map = $config->get_map( $listpath, $keypath, $valuepath )
-
-This function obtains a map, returned as a hash, containing one entry for each
+This method obtains a map, returned as a hash, containing one entry for each
 node returned by the C<$listpath> search, where the key and value are given by
-the C<$keypath> and C<$valuepath> within each node. It is not an error for no
+the C<$keypath> and C<$valuepaths> within each node. It is not an error for no
 nodes to match the C<$listpath>.
 
 The result of the C<$listpath> query must be a nodeset. The result of the
-C<$keypath> and C<$valuepath> queries for each node in the list must be
-convertable to a string, by the same rules as the C<get_string()> method.
+C<$keypath> is used as the hash key for each node, and must be convertable
+to a string, by the same rules as the C<get_string()> method. The value for
+each node in the hash will be obtained using the C<$valuepaths>, which can be
+a plain string, or an ARRAY or HASH tree, as for the C<get()> method.
+
+The keys obtained by the C<$keypath> should be unique. In the case of
+duplicates, the last value from the nodeset is used.
 
 =over 8
 
@@ -553,33 +549,34 @@ The XPath to generate the nodeset
 
 The XPath within each node to generate the key
 
-=item $valuepath
+=item $valuepaths
 
-The XPath within each node to generate the value
+The XPath expression or tree of expressions within each node to generate the
+value.
 
-=item Throws
+=item %args
 
-C<Config::XPath::ConfigNotFoundException>,
-C<Config::XPath::BadConfigException>,
-C<Config::XPath::NoDefaultConfigException>
+A hash that may contain extra options to control the operation. Supports the
+following keys:
+
+=over 4
+
+=item C<default>
+
+Contains a tree in the same structure as the C<$valuepaths>, whose leaf values
+should be returned instead of the value yielded by the XPath expression, in
+the case that no nodes match it.
+
+=back
 
 =back
 
 =cut
 
-sub get_config_map($$$)
-{
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
-
-   throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $self;
-
-   $self->get_map( @_ );
-}
-
 sub get_map
 {
    my $self = shift;
-   my ( $listpath, $keypath, $valuepath ) = @_;
+   my ( $listpath, $keypath, $valuepaths, %args ) = @_;
 
    my @nodes = $self->get_config_nodes( $listpath );
 
@@ -589,8 +586,7 @@ sub get_map
       my $keynode = $self->find( $keypath, context => $node );
       my $key = $self->convert_string( $keynode, $keypath );
 
-      my $valuenode = $self->find( $valuepath, context => $node );
-      my $value = $self->convert_string( $valuenode, $valuepath );
+      my $value = $self->get( $valuepaths, context => $node, %args );
 
       $ret{$key} = $value;
    }
@@ -598,13 +594,11 @@ sub get_map
    return \%ret;
 }
 
-=head2 $subconfig = get_sub_config( $path )
+=head2 $subconfig = $config->get_sub( $path )
 
-=head2 $subconfig = $config->get_sub_config( $path )
-
-This function constructs a new C<Config::XPath> object whose context is at
-the single node selected by the XPath query. The newly constructed child
-object is then returned.
+This method constructs a new C<Config::XPath> object whose context is at the
+single node selected by the XPath query. The newly constructed child object is
+then returned.
 
 If no suitable node was found matching the XPath query, then an exception of
 C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
@@ -617,36 +611,26 @@ is thrown.
 
 The XPath to the required configuration node
 
-=item Throws
-
-C<Config::XPath::ConfigNotFoundException>,
-C<Config::XPath::BadConfigException>,
-C<Config::XPath::NoDefaultConfigException>
-
 =back
 
 =cut
 
-sub get_sub_config($)
+sub get_sub
 {
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
+   my $self = shift;
    my $class = ref( $self );
    my ( $path ) = @_;
-
-   throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
 
    my $node = $self->get_config_node( $path );
 
    return $class->newContext( $self, $node );
 }
 
-=head2 @subconfigs = get_sub_config_list( $path )
+=head2 @subconfigs = $config->get_sub_list( $path )
 
-=head2 @subconfigs = $config->get_sub_config_list( $path )
-
-This function constructs a list of new C<Config::XPath> objects whose context
-is at each node selected by the XPath query. The array of newly constructed
-objects is then returned. Unlike other functions, it is not an error for no
+This method constructs a list of new C<Config::XPath> objects whose context is
+at each node selected by the XPath query. The array of newly constructed
+objects is then returned. Unlike other methods, it is not an error for no
 nodes to match.
 
 =over 8
@@ -655,21 +639,15 @@ nodes to match.
 
 The XPath for the required configuration
 
-=item Throws
-
-C<Config::XPath::NoDefaultConfigException>
-
 =back
 
 =cut
 
-sub get_sub_config_list($)
+sub get_sub_list
 {
-   my $self = ( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) ? shift : $default_config;
+   my $self = shift;
    my $class = ref( $self );
    my ( $path ) = @_;
-
-   throw Config::XPath::NoDefaultConfigException( $path ) unless defined $self;
 
    my @nodes = $self->get_config_nodes( $path );
 
@@ -701,6 +679,180 @@ sub _reload_file
    # so we store it, replacing the old value.
 
    $self->{xp} = $xp;
+}
+
+=head1 DEFAULT CONFIG FILE
+
+In the case of calling as static functions, the default configuration is
+accessed. When the module is loaded no default configuration exists, but one
+can be loaded by calling the C<read_default_config()> function. This makes
+programs simpler to write in cases where only one configuration file is used
+by the program.
+
+=cut
+
+my $default_config;
+
+=head2 read_default_config( $file )
+
+This function reads the default configuration file, from the location given.
+If the file is not found, or an error occurs while reading it, then an
+exception of C<Config::XPath::Exception> is thrown.
+
+The default configuration is cached, so multiple calls to this function will
+not result in multiple reads of the file; subsequent requests will be silently
+ignored, even if a different filename is given.
+
+=over 8
+
+=item $file
+
+The filename of the default configuration to load
+
+=back
+
+=cut
+
+sub read_default_config($)
+{
+   my ( $file ) = @_;
+
+   last if defined $default_config;
+   
+   $default_config = Config::XPath->new( filename => $file );
+}
+
+=head1 FUNCTIONS
+
+Each of the following functions is equivalent to a similar method called on 
+the default configuration, as loaded by C<read_default_config()>.
+
+=cut
+
+=head2 $str = get_config_string( $path, %args )
+
+Equivalent to the C<get_string()> method
+
+=cut
+
+sub get_config_string($%)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_config_string' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_string( @_ );
+}
+
+=head2 $attrs = get_config_attrs( $path )
+
+Equivalent to the C<get_attrs()> method
+
+=cut
+
+sub get_config_attrs($)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_config_attrs' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_attrs( @_ );
+}
+
+=head2 @values = get_config_list( $path )
+
+Equivalent to the C<get_list()> method
+
+=cut
+
+sub get_config_list($)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_config_list' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_list( @_ );
+}
+
+=head2 $map = get_config_map( $listpath, $keypath, $valuepath )
+
+Equivalent to the C<get_map()> method
+
+=cut
+
+sub get_config_map($$$)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_config_map' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_map( @_ );
+}
+
+=head2 $map = get_sub_config( $path )
+
+Equivalent to the C<get_sub()> method
+
+=cut
+
+sub get_sub_config($)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_sub_config' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_sub( @_ );
+}
+
+=head2 $map = get_sub_config_list( $path )
+
+Equivalent to the C<get_sub_list()> method
+
+=cut
+
+sub get_sub_config_list($)
+{
+   my $self;
+   if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
+      carp "Using static function 'get_sub_config_list' as a method is deprecated";
+      $self = shift;
+   }
+   else {
+      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      $self = $default_config;
+   }
+
+   $self->get_sub_list( @_ );
 }
 
 # Keep perl happy; keep Britain tidy

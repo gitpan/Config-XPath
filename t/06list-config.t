@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 12;
 use Test::Exception;
+use Test::Warn;
 
 use Config::XPath;
 
@@ -30,3 +31,18 @@ is_deeply( \@l, [], 'list missing' );
 throws_ok( sub { @l = $c->get_list( "/data/comment()" ) },
            'Config::XPath::BadConfigException',
            'get_config_list unrepresentable throws exception' );
+
+@l = $c->get_list( "/data/eee/ff", '@name' );
+is_deeply( \@l, [ qw( one two ) ], 'list values using value paths' );
+
+@l = $c->get_list( "/data/eee/ff", { name => '@name', value => '.' } );
+is_deeply( \@l, [ { name => 'one', value => 1 }, { name => 'two', value => 2 } ], 'list values using HASH value paths' );
+
+@l = $c->get_list( "/data/jj", { o => '@o', first => '@first' }, default => { first => 0 } );
+is_deeply( \@l, [ { o => 1, first => 1 }, { o => 2, first => 0 } ] );
+
+warning_is( sub { @l = $c->get_config_list( "/data/ccc/dd/\@name" ) },
+            "Using static function 'get_config_list' as a method is deprecated",
+            'using static function as method gives warning' );
+
+is_deeply( \@l, [ qw( one two ) ], 'list values from static function' );

@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 use Test::Exception;
+use Test::Warn;
 
 use Config::XPath;
 
@@ -30,3 +31,9 @@ throws_ok( sub { $aref = $c->get_attrs( "/data/ccc/dd" ) },
 throws_ok( sub { $aref = $c->get_attrs( "/data/aaa/\@str" ) },
            'Config::XPath::BadConfigException',
            'get_config_attrs attribute throws exception' );
+
+warning_is( sub { $aref = $c->get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" ) },
+            "Using static function 'get_config_attrs' as a method is deprecated",
+            'using static function as method gives warning' );
+
+is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attributes values from static function' );

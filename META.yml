@@ -1,6 +1,6 @@
 ---
 name: Config-XPath
-version: 0.11
+version: 0.12
 author:
   - 'Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>'
 abstract: |-
@@ -13,23 +13,24 @@ requires:
 build_requires:
   Test::Exception: 0
   Test::More: 0
+  Test::Warn: 0
 provides:
   Config::XPath:
     file: lib/Config/XPath.pm
-    version: 0.11
+    version: 0.12
   Config::XPath::BadConfigException:
     file: lib/Config/XPath.pm
-    version: 0.11
+    version: 0.12
   Config::XPath::ConfigNotFoundException:
     file: lib/Config/XPath.pm
-    version: 0.11
+    version: 0.12
   Config::XPath::Exception:
     file: lib/Config/XPath.pm
-    version: 0.11
+    version: 0.12
   Config::XPath::NoDefaultConfigException:
     file: lib/Config/XPath.pm
-    version: 0.11
+    version: 0.12
   Config::XPath::Reloadable:
     file: lib/Config/XPath/Reloadable.pm
-    version: 0.11
+    version: 0.12
 generated_by: Module::Build version 0.26

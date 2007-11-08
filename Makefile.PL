@@ -8,6 +8,7 @@ WriteMakefile
                            'Error' => '0.15',
                            'Test::Exception' => '0',
                            'Test::More' => '0',
+                           'Test::Warn' => '0',
                            'XML::XPath' => '0'
                          },
           'INSTALLDIRS' => 'site',

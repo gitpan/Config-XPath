@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 21;
+use Test::More tests => 23;
 use Test::Exception;
+use Test::Warn;
 
 use Config::XPath;
 
@@ -84,3 +85,9 @@ throws_ok( sub { $s = $c->get_string( "/data/comment()" ) },
 
 $s = $c->get_string( "/data/empty" );
 is( $s, "", 'empty' );
+
+warning_is( sub { $s = $c->get_config_string( "/data/aaa/bbb" ) },
+            "Using static function 'get_config_string' as a method is deprecated",
+            'using static function as method gives warning' );
+
+is( $s, "Content", 'content from static function' );
