@@ -1,4 +1,5 @@
 Build.PL
+Changes
 lib/Config/XPath.pm
 lib/Config/XPath/Manual.pod
 lib/Config/XPath/Reloadable.pm
@@ -13,6 +14,8 @@ t/05attr-config.t
 t/06list-config.t
 t/07map-config.t
 t/10subconf.t
+t/11ioref.t
+t/12parser.t
 t/20reloadable-constant.t
 t/21reloadable-root.t
 t/22reloadable-set.t

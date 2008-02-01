@@ -23,10 +23,9 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use XML::XPath;
-use XML::XPath::XMLParser;
 
 use Carp;
 
@@ -95,7 +94,7 @@ the configuration in the named XML file. If the given file does not exist, or
 an error occured while reading it, an exception C<Config::XPath::Exception>
 is thrown.
 
-The C<%args> hash takes the following keys:
+The C<%args> hash requires one the following keys to provide the XML source:
 
 =over 8
 
@@ -107,7 +106,23 @@ The filename of the XML file to read
 
 A string containing XML data
 
+=item ioref => IO
+
+An IO handle reference
+
 =back
+
+Also may be provided:
+
+=over 8
+
+=item parser => $parser
+
+An C<XML::Parser> object
+
+=back
+
+If a parser is not provided, one will be constructed internally.
 
 =cut
 
@@ -128,18 +143,31 @@ sub new
 
    my $self = bless { 
    }, $class;
+
+   my $parser = $self->{parser} = delete $args{parser};
    
    if( defined $args{filename} ) {
       $self->{filename} = $args{filename};
       $self->_reload_file;
    }
    elsif( defined $args{xml} ) {
-      my $xp = XML::XPath->new( xml => $args{xml} );
+      my $xp = XML::XPath->new(
+         xml => $args{xml},
+         defined $parser ? ( parser => $parser ) : (),
+      );
       throw Config::XPath::Exception( "Cannot parse string", undef ) unless $xp;
       $self->{xp} = $xp;
    }
+   elsif( defined $args{ioref} ) {
+      my $xp = XML::XPath->new( 
+         ioref => $args{ioref},
+         defined $parser ? ( parser => $parser ) : (),
+      );
+      throw Config::XPath::Exception( "Cannot parse XML from ioref", undef ) unless $xp;
+      $self->{xp} = $xp;
+   }
    else {
-      throw Config::XPath::Exception( "Expected 'filename' or 'xml' argument" );
+      throw Config::XPath::Exception( "Expected 'filename', 'xml', 'parser' or 'ioref' argument" );
    }
 
    return $self;
@@ -669,8 +697,12 @@ sub _reload_file
    return $self->{parent}->reload() if exists $self->{parent};
 
    my $file = $self->{filename};
+   my $parser = $self->{parser};
 
-   my $xp = XML::XPath->new( filename => $file );
+   my $xp = XML::XPath->new(
+      filename => $file,
+      defined $parser ? ( parser => $parser ) : (),
+   );
 
    throw Config::XPath::Exception( "Cannot read config file $file", undef ) unless $xp;
 

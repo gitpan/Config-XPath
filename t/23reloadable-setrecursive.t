@@ -66,7 +66,7 @@ sub write_file
    print $fh $content;
 }
 
-my ( $conffile, $conffilename ) = tempfile();
+my ( $conffile, $conffilename ) = tempfile( UNLINK => 1 );
 defined $conffile or die "Could not open a tempfile for testing - $!";
 $conffile->autoflush( 1 );
 
