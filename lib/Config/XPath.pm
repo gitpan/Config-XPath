@@ -1,11 +1,12 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2005-2007 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2005-2009 -- leonerd@leonerd.org.uk
 
 package Config::XPath;
 
 use strict;
+use warnings;
 
 use Exporter;
 our @ISA = qw( Exporter );
@@ -23,11 +24,13 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 use XML::XPath;
 
 use Carp;
+
+use Scalar::Util qw( weaken );
 
 =head1 NAME
 
@@ -183,6 +186,8 @@ sub newContext($$)
       parent   => $parent,
       context  => $context
    };
+
+   weaken( $self->{parent} );
 
    return bless $self, $class;
 }
@@ -896,7 +901,8 @@ sub get_sub_config_list($)
 
 =cut
 
-package Config::XPath::Exception;
+package # noindex
+   Config::XPath::Exception;
 
 use base qw( Error );
 
@@ -946,7 +952,8 @@ sub stringify
 
 1;
 
-package Config::XPath::ConfigNotFoundException;
+package # noindex
+   Config::XPath::ConfigNotFoundException;
 
 =head2 Config::XPath::ConfigNotFoundException
 
@@ -959,7 +966,8 @@ the same way.
 use base qw( Config::XPath::Exception );
 1;
 
-package Config::XPath::BadConfigException;
+package # noindex
+   Config::XPath::BadConfigException;
 
 =head2 Config::XPath::BadConfigException
 
@@ -972,7 +980,8 @@ C<Config::XPath::Exception> and is constructed and accessed in the same way.
 use base qw( Config::XPath::Exception );
 1;
 
-package Config::XPath::NoDefaultConfigException;
+package # noindex
+   Config::XPath::NoDefaultConfigException;
 
 use base qw( Config::XPath::Exception );
 
@@ -1016,4 +1025,4 @@ L<Error> - Base module for exception-based error handling
 
 =head1 AUTHOR
 
-Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>
+Paul Evans <leonerd@leonerd.org.uk>

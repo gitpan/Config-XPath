@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 19;
+use Test::More tests => 23;
+use Test::Refcount;
 use Test::Warn;
 
 use Config::XPath;
@@ -12,6 +13,8 @@ my $c;
 $c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
+
+is_oneref( $c, '$c has one reference' );
 
 my $sub = $c->get_sub( "/data/ccc" );
 ok( defined $sub, 'defined $sub' );
@@ -32,6 +35,8 @@ my @subs = $c->get_sub_list( "/data/ccc/dd" );
 is( scalar @subs, 2, 'get_sub_list count' );
 is( ref $subs[0], "Config::XPath", 'subconfig[0] ref type' );
 is( ref $subs[1], "Config::XPath", 'subconfig[1] ref type' );
+
+is_oneref( $subs[$_], "\$subs[$_] has one reference" ) for 0 .. 1;
 
 $sub = $subs[0];
 
@@ -57,3 +62,5 @@ warning_is( sub { @subs = $c->get_sub_config_list( "/data/ccc/dd" ) },
 is( scalar @subs, 2, 'result from static list function' );
 is( ref $subs[0], "Config::XPath", 'subconfig[0] ref type' );
 is( ref $subs[1], "Config::XPath", 'subconfig[1] ref type' );
+
+is_oneref( $c, '$c has one reference at EOF' );

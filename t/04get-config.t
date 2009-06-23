@@ -2,14 +2,18 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 use Test::Exception;
+use Test::Refcount;
 
 use Config::XPath;
 
 my $c = Config::XPath->new( filename => "t/data.xml" );
+
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
+
+is_oneref( $c, '$c has one reference' );
 
 my $v;
 
@@ -28,3 +32,5 @@ is_deeply( $v, [ { name => "one", value => 1 }, { name => "two", value => 2 } ],
 
 dies_ok( sub { $c->get( \"scalar" ) },
          'get on SCALAR ref fails' );
+
+is_oneref( $c, '$c has one reference at EOF' );

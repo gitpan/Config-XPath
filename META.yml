@@ -1,8 +1,8 @@
 ---
 name: Config-XPath
-version: 0.13
+version: 0.14
 author:
-  - 'Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>'
+  - 'Paul Evans <leonerd@leonerd.org.uk>'
 abstract: |-
   a module for retrieving configuration data from XML files
   by using XPath queries
@@ -15,23 +15,16 @@ requires:
 build_requires:
   Test::Exception: 0
   Test::More: 0
+  Test::Refcount: 0
   Test::Warn: 0
 provides:
   Config::XPath:
     file: lib/Config/XPath.pm
-    version: 0.13
-  Config::XPath::BadConfigException:
-    file: lib/Config/XPath.pm
-  Config::XPath::ConfigNotFoundException:
-    file: lib/Config/XPath.pm
-  Config::XPath::Exception:
-    file: lib/Config/XPath.pm
-  Config::XPath::NoDefaultConfigException:
-    file: lib/Config/XPath.pm
+    version: 0.14
   Config::XPath::Reloadable:
     file: lib/Config/XPath/Reloadable.pm
-    version: 0.13
-generated_by: Module::Build version 0.2808
+    version: 0.14
+generated_by: Module::Build version 0.33
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4

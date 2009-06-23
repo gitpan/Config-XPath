@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 9;
+use Test::More tests => 13;
+use Test::Refcount;
 
 use Config::XPath::Reloadable;
 
@@ -35,6 +36,8 @@ $c = Config::XPath::Reloadable->new( filename => $conffilename );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath::Reloadable", 'ref $c' );
 
+is_oneref( $c, '$c has one reference' );
+
 my %events;
 my %nodes;
 
@@ -52,6 +55,8 @@ $c->associate_nodeset( '/config/key', '@name',
                  },
 );
 
+is_oneref( $c, '$c has one reference after associate_nodeset' );
+
 is_deeply( \%events, { 1 => 'add' }, 'initial events' );
 
 my %orig_nodes = %nodes;
@@ -65,6 +70,8 @@ write_file $conffile, <<EOC;
 EOC
 
 $c->reload();
+
+is_oneref( $c, '$c has one reference after reload' );
 
 is_deeply( \%events, { 1 => 'keep', 2 => 'add' }, '1st reload events' );
 is( $nodes{1}, $orig_nodes{1}, '1st reload node equality' );
@@ -94,3 +101,5 @@ is_deeply( \%events, { 2 => 'keep' }, '3rd reload events' );
 $c->reload();
 
 is_deeply( \%events, { 2 => 'keep' }, '4th reload events' );
+
+is_oneref( $c, '$c has one reference at EOF' );

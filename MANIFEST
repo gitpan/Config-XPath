@@ -3,9 +3,11 @@ Changes
 lib/Config/XPath.pm
 lib/Config/XPath/Manual.pod
 lib/Config/XPath/Reloadable.pm
+LICENSE
 Makefile.PL
 MANIFEST			This list of files
 META.yml
+README
 t/01use.t
 t/02exceptions.t
 t/03str-config.t

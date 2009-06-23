@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 3;
+use Test::More tests => 5;
+use Test::Refcount;
 
 use Config::XPath;
 
@@ -18,7 +19,11 @@ $c = Config::XPath->new(
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
 
+is_oneref( $c, '$c has one reference' );
+
 my $s;
 
 $s = $c->get_string( "/data/string" );
 is( $s, "Value", 'content from parser' );
+
+is_oneref( $c, '$c has one reference at EOF' );

@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 use Test::Exception;
+use Test::Refcount;
 
 use_ok( "Config::XPath::Reloadable" );
 
@@ -14,6 +15,8 @@ throws_ok( sub { Config::XPath::Reloadable->new( xml => "<data>foo</data>" ) },
 my $c;
 
 $c = Config::XPath::Reloadable->new( filename => "t/data.xml" );
+
+is_oneref( $c, '$c has one reference' );
 
 my $s;
 
@@ -30,3 +33,5 @@ my @l;
 
 @l = $c->get_list( "/data/ccc/dd/\@name" );
 is_deeply( \@l, [ qw( one two ) ], 'list values' );
+
+is_oneref( $c, '$c has one reference at EOF' );

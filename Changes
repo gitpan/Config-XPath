@@ -1,5 +1,10 @@
 Revision history for Config-XPath
 
+0.14    CHANGES:
+         * Added 'use warnings'
+         * Use Test::Refcount to check reference counts
+         * Other small improvements to tests or documentation
+
 0.13    CHANGES:
          * Allow 'ioref' and 'parser' constructor arguments
 

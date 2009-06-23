@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 5;
+use Test::More tests => 7;
+use Test::Refcount;
 
 use Config::XPath::Reloadable;
 
@@ -35,6 +36,8 @@ $c = Config::XPath::Reloadable->new( filename => $conffilename );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath::Reloadable", 'ref $c' );
 
+is_oneref( $c, '$c has one reference' );
+
 my $s;
 
 $s = $c->get_string( "/config/key" );
@@ -53,3 +56,5 @@ $c->reload();
 
 $s = $c->get_string( "/config/key" );
 is( $s, "new value here", 'changed content' );
+
+is_oneref( $c, '$c has one reference at EOF' );

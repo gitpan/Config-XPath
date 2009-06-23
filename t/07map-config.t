@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 14;
+use Test::More tests => 16;
 use Test::Exception;
+use Test::Refcount;
 use Test::Warn;
 
 use Config::XPath;
@@ -13,6 +14,8 @@ my $c;
 $c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
+
+is_oneref( $c, '$c has one reference' );
 
 my $mref;
 
@@ -47,3 +50,5 @@ warning_is( sub { $mref = $c->get_config_map( "/data/eee/ff", '@name', '.' ) },
             'using static function as method gives warning' );
 
 is_deeply( $mref, { one => 1, two => 2 }, 'map value from static function' );
+
+is_oneref( $c, '$c has one reference at EOF' );

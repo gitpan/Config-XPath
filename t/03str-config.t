@@ -2,8 +2,9 @@
 
 use strict;
 
-use Test::More tests => 23;
+use Test::More tests => 25;
 use Test::Exception;
+use Test::Refcount;
 use Test::Warn;
 
 use Config::XPath;
@@ -41,6 +42,8 @@ is( $s, "Two", 'content from inline XML node with attrs' );
 $c = Config::XPath->new( filename => "t/data.xml" );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath", 'ref $c' );
+
+is_oneref( $c, '$c has one reference' );
 
 $s = $c->get_string( "/data/aaa/bbb" );
 is( $s, "Content", 'content' );
@@ -91,3 +94,5 @@ warning_is( sub { $s = $c->get_config_string( "/data/aaa/bbb" ) },
             'using static function as method gives warning' );
 
 is( $s, "Content", 'content from static function' );
+
+is_oneref( $c, '$c has one reference at EOF' );

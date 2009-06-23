@@ -2,7 +2,8 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 11;
+use Test::Refcount;
 
 use Config::XPath::Reloadable;
 
@@ -36,6 +37,8 @@ $c = Config::XPath::Reloadable->new( filename => $conffilename );
 ok( defined $c, 'defined $c' );
 is( ref $c, "Config::XPath::Reloadable", 'ref $c' );
 
+is_oneref( $c, '$c has one reference' );
+
 my @lines;
 
 $c->associate_nodelist( '/config/line',
@@ -47,6 +50,8 @@ $c->associate_nodelist( '/config/line',
                  },
 );
 
+is_oneref( $c, '$c has one reference after associate_nodelist' );
+
 is_deeply( \@lines, [ 'Foo', 'Bar' ], 'initial load' );
 
 $c->reload();
@@ -54,6 +59,8 @@ $c->reload();
 is_deeply( \@lines, [ 'Foo', 'Bar' ], '1st reload' );
 
 $c->reload();
+
+is_oneref( $c, '$c has one reference after reload' );
 
 is_deeply( \@lines, [ 'Foo', 'Bar' ], '2nd reload' );
 
@@ -79,3 +86,5 @@ EOC
 $c->reload();
 
 is_deeply( \@lines, [ 'Bar', 'Splot' ], 'reload after delete' );
+
+is_oneref( $c, '$c has one reference at EOF' );

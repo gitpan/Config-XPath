@@ -1,14 +1,15 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2006,2007 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2006-2009 -- leonerd@leonerd.org.uk
 
 package Config::XPath::Reloadable;
 
 use strict;
+use warnings;
 use base qw( Config::XPath );
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 =head1 NAME
 
@@ -373,6 +374,6 @@ C<Error> - Base module for exception-based error handling
 
 =head1 AUTHOR
 
-Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>
+Paul Evans <leonerd@leonerd.org.uk>
 
 =back
