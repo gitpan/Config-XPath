@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use base qw( Config::XPath );
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 =head1 NAME
 
@@ -372,8 +372,8 @@ C<XML::XPath> - Perl XML module that implements XPath queries
 
 C<Error> - Base module for exception-based error handling
 
+=back
+
 =head1 AUTHOR
 
 Paul Evans <leonerd@leonerd.org.uk>
-
-=back

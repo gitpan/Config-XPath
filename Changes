@@ -1,5 +1,12 @@
 Revision history for Config-XPath
 
+0.15    CHANGES:
+         * Extracted manual examples into a runnable file
+
+        BUGFIXES:
+         * Fixed examples in manual to make them actually run
+         * Fixed minor POD error
+
 0.14    CHANGES:
          * Added 'use warnings'
          * Use Test::Refcount to check reference counts

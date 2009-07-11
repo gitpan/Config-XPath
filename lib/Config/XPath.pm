@@ -24,7 +24,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 use XML::XPath;
 
@@ -34,8 +34,7 @@ use Scalar::Util qw( weaken );
 
 =head1 NAME
 
-C<Config::XPath> - a module for retrieving configuration data from XML files
-by using XPath queries
+C<Config::XPath> - retrieve configuration data from XML files by using XPath
 
 =head1 SYNOPSIS
 

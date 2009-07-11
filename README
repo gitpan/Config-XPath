@@ -1,6 +1,6 @@
 NAME
-    "Config::XPath" - a module for retrieving configuration data from XML
-    files by using XPath queries
+    "Config::XPath" - retrieve configuration data from XML files by using
+    XPath
 
 SYNOPSIS
      use Config::XPath;

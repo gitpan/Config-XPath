@@ -19,9 +19,9 @@ the following data file
 
  <elements>
    <el name="hydrogen" symbol="H">
-     <isotope number="1" NA="0.99985"></isotope>
-     <isotope number="2" NA="0.00115"></isotope>
-     <isotope number="3">
+     <isotope number="1" NA="0.99985" name="protium"></isotope>
+     <isotope number="2" NA="0.00115" name="deuterium"></isotope>
+     <isotope number="3" name="tritium">
        <halflife unit="years">12.32</halflife>
      </isotope>
    </el>
@@ -57,7 +57,7 @@ using the C<get_string()> method.
  my $hydrogen_symbol = 
      $config->get_string( '//el[@name="hydrogen"]/@symbol' );
 
- my $N_name = $config->get_string( '//el[@symbol="N"]/@name' );
+ my $C_name = $config->get_string( '//el[@symbol="C"]/@name' );
 
  my $number_of_elements = $config->get_string( 'count(//el)' );
 
@@ -81,20 +81,20 @@ C<get()> method. These consist of XPath expressions as the leaves of a tree,
 formed out of anonymous array and hash references. The result will be returned
 in a structure of identical layout to the input.
 
- my $result = $config->get( { name   => '//el[1]/@name',
-                              symbol => '//el[1]/@symbol' } );
+ my $hydrogen = $config->get( { name   => '//el[1]/@name',
+                                symbol => '//el[1]/@symbol' } );
 
- print "$result->{name}'s symbol is $result->{symbol}\n";
+ print "$hydrogen->{name}'s symbol is $hydrogen->{symbol}\n";
 
 As with C<get_string()>, default values can be supplied. These are given in a
 tree of similar structure to the paths.
 
- my $result = $config->get(
+ $hydrogen = $config->get(
     [ '//el[1]/@oranges', '//el[1]/@name' ],
     default => [ undef, "name" ]
  );
 
- # $result is now [ undef, 'hydrogen' ]
+ # $hydrogen is now [ undef, 'hydrogen' ]
 
 If arrays are used (as in this example), the C<undef> values used to fill
 "holes" in the array will cause C<undef> to be returned rather than exceptions
@@ -103,7 +103,7 @@ being thrown.
 If this distinction is important to your program, make sure to use hashes
 instead of arrays when dealing with structures that have default values.
 
- my $result = $config->get(
+ my $tritium = $config->get(
     {
        name     => '//el[1]/isotope[3]/@name',
        halflife => '//el[1]/isotope[3]/halflife'
@@ -133,11 +133,11 @@ be provided.
 
  my @iso = $config->get_list( '//el',
                               { name          => '@name',
-                                first_isotope => 'isotope[1]/@name' } );
+                                first_isotope => 'isotope[1]/@number' } );
 
  my @hydrogen_halflives = $config->get_list(
     '//el[@name="hydrogen"]/isotope',
-    { value => 'text()', unit => '@unit' },
+    { number => '@number', value => 'halflife', unit => 'halflife/@unit' },
     default => { unit => 'forever', value => '0' }
  );
 
@@ -169,7 +169,7 @@ data.
 
  my $abundances = $oxygen_config->get_map(
                      'isotope',
-                     '@number', '@NA'
+                     '@number', '@NA',
                      default => 'trace' );
 
 A list of subconfigurations can be generated with C<get_sub_list>

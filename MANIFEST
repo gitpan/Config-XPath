@@ -1,5 +1,7 @@
 Build.PL
 Changes
+examples/elements.xml
+examples/manual.pl
 lib/Config/XPath.pm
 lib/Config/XPath/Manual.pod
 lib/Config/XPath/Reloadable.pm
@@ -24,4 +26,5 @@ t/22reloadable-set.t
 t/23reloadable-setrecursive.t
 t/24reloadable-list.t
 t/30defaultconfig.t
+t/99pod.t
 t/data.xml
