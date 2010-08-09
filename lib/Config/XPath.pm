@@ -1,15 +1,14 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2005-2009 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2005-2010 -- leonerd@leonerd.org.uk
 
 package Config::XPath;
 
 use strict;
 use warnings;
 
-use Exporter;
-our @ISA = qw( Exporter );
+use Exporter 'import';
 our @EXPORT = qw(
    get_service_config
 
@@ -24,7 +23,7 @@ our @EXPORT = qw(
    read_default_config
 );
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 use XML::XPath;
 
@@ -93,8 +92,7 @@ returning a single child, and the latter returning a list of all matches.
 
 This function returns a new instance of a C<Config::XPath> object, containing
 the configuration in the named XML file. If the given file does not exist, or
-an error occured while reading it, an exception C<Config::XPath::Exception>
-is thrown.
+an error occured while reading it, an exception is thrown.
 
 The C<%args> hash requires one the following keys to provide the XML source:
 
@@ -157,7 +155,7 @@ sub new
          xml => $args{xml},
          defined $parser ? ( parser => $parser ) : (),
       );
-      throw Config::XPath::Exception( "Cannot parse string", undef ) unless $xp;
+      croak "Cannot parse string" unless $xp;
       $self->{xp} = $xp;
    }
    elsif( defined $args{ioref} ) {
@@ -165,18 +163,18 @@ sub new
          ioref => $args{ioref},
          defined $parser ? ( parser => $parser ) : (),
       );
-      throw Config::XPath::Exception( "Cannot parse XML from ioref", undef ) unless $xp;
+      croak "Cannot parse XML from ioref" unless $xp;
       $self->{xp} = $xp;
    }
    else {
-      throw Config::XPath::Exception( "Expected 'filename', 'xml', 'parser' or 'ioref' argument" );
+      croak "Expected 'filename', 'xml', 'parser' or 'ioref' argument";
    }
 
    return $self;
 }
 
 # Internal-only constructor
-sub newContext($$)
+sub newContext
 {
    my $class = shift;
    my ( $parent, $context ) = @_;
@@ -219,7 +217,7 @@ sub get_config_nodes
    my $nodeset = $self->find( $path );
 
    unless( $nodeset->isa( "XML::XPath::NodeSet" ) ) {
-      throw Config::XPath::BadConfigException( "Expected result to be a nodeset", $path );
+      croak "Expected result to be a nodeset at '$path'";
    }
 
    return $nodeset->get_nodelist;
@@ -233,11 +231,11 @@ sub get_config_node
    my @nodes = $self->get_config_nodes( $path );
 
    if ( scalar @nodes == 0 ) {
-      throw Config::XPath::ConfigNotFoundException( "No config found", $path );
+      croak "No config found at '$path'";
    }
 
    if ( scalar @nodes > 1 ) {
-      throw Config::XPath::BadConfigException( "Found more than one node", $path );
+      croak "Found more than one node at '$path'";
    }
 
    return shift @nodes;
@@ -270,11 +268,11 @@ sub convert_string
    if ( scalar @nodes == 0 ) {
       return $args{default} if exists $args{default};
 
-      throw Config::XPath::ConfigNotFoundException( "No config found", $path );
+      croak "No config found at '$path'";
    }
 
    if ( scalar @nodes > 1 ) {
-      throw Config::XPath::BadConfigException( "Found more than one node", $path );
+      croak "Found more than one node at '$path'";
    }
 
    my $node = $nodes[0];
@@ -290,13 +288,13 @@ sub convert_string
          my $child = shift @children;
 
          if ( ! $child->isa( "XML::XPath::Node::Text" ) ) {
-            throw Config::XPath::BadConfigException( "Result is not a plain text value", $path );
+            croak "Result is not a plain text value at '$path'";
          }
 
          return $child->string_value();
       }
       else {
-         throw Config::XPath::BadConfigException( "Found more than one child node", $path );
+         croak "Found more than one child node at '$path'";
       }
    }
    elsif( $node->isa( "XML::XPath::Node::Text" ) ) {
@@ -307,7 +305,7 @@ sub convert_string
    }
    else {
       my $t = ref( $node );
-      throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $path );
+      croak "Cannot return string representation of node type $t at '$path'";
    }
 }
 
@@ -330,11 +328,10 @@ a C<default> key, which should give default values for these results, also in
 a similar tree structure.
 
 If no suitable node was found matching an XPath expression and no
-corresponding C<default> value is found, then an exception of
-C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
-node is returned, or the returned node is not either a plain-text content
-containing no child nodes, or an attribute, then an exception of class
-C<Config::XPath::BadConfigException> class is thrown.
+corresponding C<default> value is found, then an exception is thrown. If more
+than one node is returned, or the returned node is not either a plain-text
+content containing no child nodes, or an attribute, then an exception is
+thrown.
 
 =over 8
 
@@ -424,7 +421,7 @@ following keys:
 =item C<default>
 
 If no XML node is found matching the path, return this value rather than
-throwing a C<Config::XPath::ConfigNotFoundException>.
+throwing an exception.
 
 =back
 
@@ -450,10 +447,9 @@ which is returned in a special key named C<'+'>. This name is not valid for an
 XML attribute, so this key will never clash with an actual value from the XML
 file.
 
-If no suitable node was found matching the XPath query, then an exception of
-C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
-node matched, or the returned node is not an element, then an exception of
-class C<Config::XPath::BadConfigException> class is thrown.
+If no suitable node was found matching the XPath query, then an exception is
+thrown.  If more than one node matched, or the returned node is not an
+element, then an exception is thrown.
 
 =over 8
 
@@ -473,7 +469,7 @@ sub get_attrs
    my $node = $self->get_config_node( $path );
 
    unless( $node->isa( "XML::XPath::Node::Element" ) ) {
-      throw Config::XPath::BadConfigException( "Node is not an element", $path );
+      croak "Node is not an element at '$path'";
    }
 
    return get_node_attrs( $node );
@@ -546,7 +542,7 @@ sub get_list
       }
       else {
          my $t = ref( $node );
-         throw Config::XPath::BadConfigException( "Cannot return string representation of node type $t", $listpath );
+         croak "Cannot return string representation of node type $t at '$listpath'";
       }
 
       push @ret, $val;
@@ -633,9 +629,7 @@ single node selected by the XPath query. The newly constructed child object is
 then returned.
 
 If no suitable node was found matching the XPath query, then an exception of
-C<Config::XPath::ConfigNotFoundException> class is thrown. If more than one
-node matched, then an exception of class C<Config::XPath::BadConfigException>
-is thrown.
+is thrown. If more than one node matched, then an exception is thrown.
 
 =over 8
 
@@ -708,7 +702,7 @@ sub _reload_file
       defined $parser ? ( parser => $parser ) : (),
    );
 
-   throw Config::XPath::Exception( "Cannot read config file $file", undef ) unless $xp;
+   croak "Cannot read config file $file" unless $xp;
 
    # If we threw an exception, this line never gets run, so the old {xp} is
    # preserved. If not, then we know that $xp at least contains valid XML data
@@ -733,7 +727,7 @@ my $default_config;
 
 This function reads the default configuration file, from the location given.
 If the file is not found, or an error occurs while reading it, then an
-exception of C<Config::XPath::Exception> is thrown.
+exception is thrown.
 
 The default configuration is cached, so multiple calls to this function will
 not result in multiple reads of the file; subsequent requests will be silently
@@ -749,7 +743,7 @@ The filename of the default configuration to load
 
 =cut
 
-sub read_default_config($)
+sub read_default_config
 {
    my ( $file ) = @_;
 
@@ -771,7 +765,7 @@ Equivalent to the C<get_string()> method
 
 =cut
 
-sub get_config_string($%)
+sub get_config_string
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -779,7 +773,7 @@ sub get_config_string($%)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -792,7 +786,7 @@ Equivalent to the C<get_attrs()> method
 
 =cut
 
-sub get_config_attrs($)
+sub get_config_attrs
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -800,7 +794,7 @@ sub get_config_attrs($)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -813,7 +807,7 @@ Equivalent to the C<get_list()> method
 
 =cut
 
-sub get_config_list($)
+sub get_config_list
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -821,7 +815,7 @@ sub get_config_list($)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -834,7 +828,7 @@ Equivalent to the C<get_map()> method
 
 =cut
 
-sub get_config_map($$$)
+sub get_config_map
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -842,7 +836,7 @@ sub get_config_map($$$)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -855,7 +849,7 @@ Equivalent to the C<get_sub()> method
 
 =cut
 
-sub get_sub_config($)
+sub get_sub_config
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -863,7 +857,7 @@ sub get_sub_config($)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -876,7 +870,7 @@ Equivalent to the C<get_sub_list()> method
 
 =cut
 
-sub get_sub_config_list($)
+sub get_sub_config_list
 {
    my $self;
    if( ref( $_[0] ) && $_[0]->isa( __PACKAGE__ ) ) {
@@ -884,7 +878,7 @@ sub get_sub_config_list($)
       $self = shift;
    }
    else {
-      throw Config::XPath::NoDefaultConfigException( $_[0] ) unless defined $default_config;
+      croak "No default config loaded for '$_[0]'" unless defined $default_config;
       $self = $default_config;
    }
 
@@ -892,118 +886,6 @@ sub get_sub_config_list($)
 }
 
 # Keep perl happy; keep Britain tidy
-1;
-
-# Some exception classes
-
-=head1 EXCEPTIONS
-
-=cut
-
-package # noindex
-   Config::XPath::Exception;
-
-use base qw( Error );
-
-=head2 Config::XPath::Exception
-
-This exception is used as a base class for config-related exceptions. It is
-derived from C<Error>, and stores the config path involved.
-
- $e = Config::XPath::Exception->new( $message; $path )
-
-The path is optional, and will only be stored if defined. It can be accessed
-using the C<path> method.
-
- $path = $e->path
-
-=cut
-
-sub new
-{
-   my $class = shift;
-   my ( $message, $path ) = @_;
-
-   local $Error::Depth = $Error::Depth + 1;
-
-   my $self = $class->SUPER::new( -text => $message );
-   $self->{path} = $path if( defined $path );
-
-   $self;
-}
-
-sub path
-{
-   my $self = shift;
-   return $self->{path};
-}
-
-sub stringify
-{
-   my $self = shift;
-   if ( exists $self->{path} ) {
-      return $self->SUPER::stringify() . " at path $self->{path}";
-   }
-   else {
-      return $self->SUPER::stringify();
-   }
-}
-
-1;
-
-package # noindex
-   Config::XPath::ConfigNotFoundException;
-
-=head2 Config::XPath::ConfigNotFoundException
-
-This exception indicates that the requested configuration was not found. It is
-derived from C<Config::XPath::Exception> and is constructed and accessed in
-the same way.
-
-=cut
-
-use base qw( Config::XPath::Exception );
-1;
-
-package # noindex
-   Config::XPath::BadConfigException;
-
-=head2 Config::XPath::BadConfigException
-
-This exception indicates that configuration found at the requested path was
-not of a type suitable for the request made. It is derived from
-C<Config::XPath::Exception> and is constructed and accessed in the same way.
-
-=cut
-
-use base qw( Config::XPath::Exception );
-1;
-
-package # noindex
-   Config::XPath::NoDefaultConfigException;
-
-use base qw( Config::XPath::Exception );
-
-=head2 Config::XPath::NoDefaultConfigException
-
-This exception indicates that no default configuration has yet been loaded 
-when one of the accessor functions is called directly. It is derived from
-C<Config::XPath::Exception>.
-
- $e = Config::XPath::NoDefaultConfigException->new( $path )
-
-=cut
-
-sub new
-{
-   my $class = shift;
-   my ( $path ) = @_;
-
-   local $Error::Depth = $Error::Depth + 1;
-
-   $class->SUPER::new( "No default configuration loaded", $path );
-}
-
 1;
 
 __END__
@@ -1015,10 +897,6 @@ __END__
 =item *
 
 L<XML::XPath> - Perl XML module that implements XPath queries
-
-=item *
-
-L<Error> - Base module for exception-based error handling
 
 =back
 

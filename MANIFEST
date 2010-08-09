@@ -11,7 +11,6 @@ MANIFEST			This list of files
 META.yml
 README
 t/01use.t
-t/02exceptions.t
 t/03str-config.t
 t/04get-config.t
 t/05attr-config.t

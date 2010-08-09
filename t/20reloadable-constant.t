@@ -8,9 +8,8 @@ use Test::Refcount;
 
 use_ok( "Config::XPath::Reloadable" );
 
-throws_ok( sub { Config::XPath::Reloadable->new( xml => "<data>foo</data>" ) },
-           "Config::XPath::Exception",
-           'reloadable with no filename throws exception' );
+dies_ok( sub { Config::XPath::Reloadable->new( xml => "<data>foo</data>" ) },
+         'reloadable with no filename throws exception' );
 
 my $c;
 

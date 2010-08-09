@@ -31,13 +31,11 @@ $mref = $c->get_map( "/data/nonodeshere", '@name', '@value' );
 ok( defined $mref, 'map defined $mref for no nodes' );
 is_deeply( $mref, {}, 'map value for no nodes' );
 
-throws_ok( sub { $mref = $c->get_map( "/data/aaa/bbb", '@name', '.' ) },
-           'Config::XPath::ConfigNotFoundException',
-           'get_config_map missing key throws exception' );
+dies_ok( sub { $mref = $c->get_map( "/data/aaa/bbb", '@name', '.' ) },
+         'get_config_map missing key throws exception' );
 
-throws_ok( sub { $mref = $c->get_map( "/data/eee/ff", '@name', '@value' ) },
-           'Config::XPath::ConfigNotFoundException',
-           'get_config_map missing value throws exception' );
+dies_ok( sub { $mref = $c->get_map( "/data/eee/ff", '@name', '@value' ) },
+         'get_config_map missing value throws exception' );
 
 $mref = $c->get_map( "/data/ccc/dd", '@name', [ '@value', 'i/@ord' ] );
 is_deeply( $mref, { one => [ 1, 'first' ], two => [ 2, 'second' ] }, 'map value with HASH valuepaths' );

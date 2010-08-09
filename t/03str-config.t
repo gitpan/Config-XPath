@@ -9,9 +9,8 @@ use Test::Warn;
 
 use Config::XPath;
 
-throws_ok( sub { Config::XPath->new( ) },
-           'Config::XPath::Exception',
-           'no filename throws exception' );
+dies_ok( sub { Config::XPath->new( ) },
+         'no filename throws exception' );
 
 my $c;
 
@@ -60,9 +59,8 @@ is( $s, "1", 'attribute by selector' );
 $s = $c->get_string( "name(/data/aaa)" );
 is( $s, "aaa", 'function' );
 
-throws_ok( sub { $s = $c->get_string( "/data/nonexistent" ) },
-           'Config::XPath::ConfigNotFoundException',
-           'nonexistent throws exception' );
+dies_ok( sub { $s = $c->get_string( "/data/nonexistent" ) },
+         'nonexistent throws exception' );
 
 lives_and( sub {
               $s = $c->get_string( "/data/nonexistent", default => "somevalue" );
@@ -70,21 +68,17 @@ lives_and( sub {
            },
            'nonexistent with default' );
 
-throws_ok( sub { $s = $c->get_string( "/data/eee/ff" ) },
-           'Config::XPath::BadConfigException',
-           'multiple nodes throws exception' );
+dies_ok( sub { $s = $c->get_string( "/data/eee/ff" ) },
+         'multiple nodes throws exception' );
 
-throws_ok( sub { $s = $c->get_string( "/data/eee" ) },
-           'Config::XPath::BadConfigException',
-           'multiple children throws exception' );
+dies_ok( sub { $s = $c->get_string( "/data/eee" ) },
+         'multiple children throws exception' );
 
-throws_ok( sub { $s = $c->get_string( "/data/ggg" ) },
-           'Config::XPath::BadConfigException',
-           'unrepresentable throws exception' );
+dies_ok( sub { $s = $c->get_string( "/data/ggg" ) },
+         'unrepresentable throws exception' );
 
-throws_ok( sub { $s = $c->get_string( "/data/comment()" ) },
-           'Config::XPath::BadConfigException',
-           'comment throws exception' );
+dies_ok( sub { $s = $c->get_string( "/data/comment()" ) },
+         'comment throws exception' );
 
 $s = $c->get_string( "/data/empty" );
 is( $s, "", 'empty' );

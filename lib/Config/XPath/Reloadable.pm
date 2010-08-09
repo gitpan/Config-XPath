@@ -1,7 +1,7 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2006-2009 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2006-2010 -- leonerd@leonerd.org.uk
 
 package Config::XPath::Reloadable;
 
@@ -9,7 +9,9 @@ use strict;
 use warnings;
 use base qw( Config::XPath );
 
-our $VERSION = '0.15';
+use Carp;
+
+our $VERSION = '0.16';
 
 =head1 NAME
 
@@ -97,7 +99,7 @@ sub new
    my %args = @_;
 
    if( !defined $args{filename} ) {
-      throw Config::XPath::Exception( "Expected 'filename' argument" );
+      croak "Expected 'filename' argument";
    }
 
    my $self = $class->SUPER::new( %args );
@@ -121,9 +123,8 @@ All of the simple data access methods of L<Config::XPath> are supported:
 
 Because of the dynamically-reloadable nature of objects in this class, the
 C<get_sub()> and C<get_sub_list()> methods are no longer allowed. They will
-instead throw exceptions of C<Config::XPath::Exception> type. The event
-callbacks in nodelists and nodesets should be used instead, to obtain
-subconfigurations.
+instead throw exceptions. The event callbacks in nodelists and nodesets
+should be used instead, to obtain subconfigurations.
 
 =cut
 
@@ -160,13 +161,13 @@ sub reload
 # Override - no POD
 sub get_sub
 {
-   throw Config::XPath::Exception( "Can't generate subconfig of a " . __PACKAGE__ );
+   croak "Can't generate subconfig of a " . __PACKAGE__;
 }
 
 # Override - no POD
 sub get_sub_list
 {
-   throw Config::XPath::Exception( "Can't generate subconfig list of a " . __PACKAGE__ );
+   croak "Can't generate subconfig list of a " . __PACKAGE__;
 }
 
 =head2 $conf->associate_nodelist( $listpath, %events )
@@ -367,10 +368,6 @@ __END__
 =item *
 
 C<XML::XPath> - Perl XML module that implements XPath queries
-
-=item *
-
-C<Error> - Base module for exception-based error handling
 
 =back
 

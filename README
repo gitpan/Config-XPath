@@ -51,8 +51,8 @@ CONSTRUCTOR
   $conf = Config::XPath->new( %args )
     This function returns a new instance of a "Config::XPath" object,
     containing the configuration in the named XML file. If the given file
-    does not exist, or an error occured while reading it, an exception
-    "Config::XPath::Exception" is thrown.
+    does not exist, or an error occured while reading it, an exception is
+    thrown.
 
     The %args hash requires one the following keys to provide the XML
     source:
@@ -88,11 +88,10 @@ METHODS
     results, also in a similar tree structure.
 
     If no suitable node was found matching an XPath expression and no
-    corresponding "default" value is found, then an exception of
-    "Config::XPath::ConfigNotFoundException" class is thrown. If more than
-    one node is returned, or the returned node is not either a plain-text
-    content containing no child nodes, or an attribute, then an exception of
-    class "Config::XPath::BadConfigException" class is thrown.
+    corresponding "default" value is found, then an exception is thrown. If
+    more than one node is returned, or the returned node is not either a
+    plain-text content containing no child nodes, or an attribute, then an
+    exception is thrown.
 
     $paths  A tree data structure containing ARRAY and HASH references, and
             XPath expressions stored in plain scalars.
@@ -116,8 +115,7 @@ METHODS
 
             "default"
                 If no XML node is found matching the path, return this value
-                rather than throwing a
-                "Config::XPath::ConfigNotFoundException".
+                rather than throwing an exception.
 
   $attrs = $config->get_attrs( $path )
     This method retrieves the attributes of a single element in the XML
@@ -127,10 +125,8 @@ METHODS
     actual value from the XML file.
 
     If no suitable node was found matching the XPath query, then an
-    exception of "Config::XPath::ConfigNotFoundException" class is thrown.
-    If more than one node matched, or the returned node is not an element,
-    then an exception of class "Config::XPath::BadConfigException" class is
-    thrown.
+    exception is thrown. If more than one node matched, or the returned node
+    is not an element, then an exception is thrown.
 
     "*$path*"
             The XPath to the required configuration node
@@ -204,9 +200,8 @@ METHODS
     object is then returned.
 
     If no suitable node was found matching the XPath query, then an
-    exception of "Config::XPath::ConfigNotFoundException" class is thrown.
-    If more than one node matched, then an exception of class
-    "Config::XPath::BadConfigException" is thrown.
+    exception of is thrown. If more than one node matched, then an exception
+    is thrown.
 
     $path   The XPath to the required configuration node
 
@@ -228,7 +223,7 @@ DEFAULT CONFIG FILE
   read_default_config( $file )
     This function reads the default configuration file, from the location
     given. If the file is not found, or an error occurs while reading it,
-    then an exception of "Config::XPath::Exception" is thrown.
+    then an exception is thrown.
 
     The default configuration is cached, so multiple calls to this function
     will not result in multiple reads of the file; subsequent requests will
@@ -258,40 +253,8 @@ FUNCTIONS
   $map = get_sub_config_list( $path )
     Equivalent to the "get_sub_list()" method
 
-EXCEPTIONS
-  Config::XPath::Exception
-    This exception is used as a base class for config-related exceptions. It
-    is derived from "Error", and stores the config path involved.
-
-     $e = Config::XPath::Exception->new( $message; $path )
-
-    The path is optional, and will only be stored if defined. It can be
-    accessed using the "path" method.
-
-     $path = $e->path
-
-  Config::XPath::ConfigNotFoundException
-    This exception indicates that the requested configuration was not found.
-    It is derived from "Config::XPath::Exception" and is constructed and
-    accessed in the same way.
-
-  Config::XPath::BadConfigException
-    This exception indicates that configuration found at the requested path
-    was not of a type suitable for the request made. It is derived from
-    "Config::XPath::Exception" and is constructed and accessed in the same
-    way.
-
-  Config::XPath::NoDefaultConfigException
-    This exception indicates that no default configuration has yet been
-    loaded when one of the accessor functions is called directly. It is
-    derived from "Config::XPath::Exception".
-
-     $e = Config::XPath::NoDefaultConfigException->new( $path )
-
 SEE ALSO
     *   XML::XPath - Perl XML module that implements XPath queries
-
-    *   Error - Base module for exception-based error handling
 
 AUTHOR
     Paul Evans <leonerd@leonerd.org.uk>

@@ -7,9 +7,8 @@ use Test::Exception;
 
 use Config::XPath;
 
-throws_ok( sub { get_config_string( "/data/aaa/bbb" ) },
-           'Config::XPath::NoDefaultConfigException',
-           'no default config throws exception' );
+dies_ok( sub { get_config_string( "/data/aaa/bbb" ) },
+         'no default config throws exception' );
 
 read_default_config( "t/data.xml" );
 
@@ -18,25 +17,20 @@ my $s;
 $s = get_config_string( "/data/aaa/bbb" );
 is( $s, "Content", 'content' );
 
-throws_ok( sub { $s = get_config_string( "/data/nonexistent" ) },
-           'Config::XPath::ConfigNotFoundException',
-           'nonexistent throws exception' );
+dies_ok( sub { $s = get_config_string( "/data/nonexistent" ) },
+         'nonexistent throws exception' );
 
-throws_ok( sub { $s = get_config_string( "/data/eee/ff" ) },
-           'Config::XPath::BadConfigException',
-           'multiple nodes throws exception' );
+dies_ok( sub { $s = get_config_string( "/data/eee/ff" ) },
+         'multiple nodes throws exception' );
 
-throws_ok( sub { $s = get_config_string( "/data/eee" ) },
-           'Config::XPath::BadConfigException',
-           'multiple children throws exception' );
+dies_ok( sub { $s = get_config_string( "/data/eee" ) },
+         'multiple children throws exception' );
 
-throws_ok( sub { $s = get_config_string( "/data/ggg" ) },
-           'Config::XPath::BadConfigException',
-           'non-text throws exception' );
+dies_ok( sub { $s = get_config_string( "/data/ggg" ) },
+         'non-text throws exception' );
 
-throws_ok( sub { $s = get_config_string( "/data/comment()" ) },
-           'Config::XPath::BadConfigException',
-           'unrepresentable throws exception' );
+dies_ok( sub { $s = get_config_string( "/data/comment()" ) },
+         'unrepresentable throws exception' );
 
 $s = get_config_string( "/data/empty" );
 is( $s, "", 'empty' );
@@ -47,17 +41,14 @@ $aref = get_config_attrs( "/data/ccc/dd[\@name=\"one\"]" );
 ok( defined $aref, 'attributes hash defined'  );
 is_deeply( $aref, { '+' => "dd", name => "one", value => "1" }, 'attribute values' );
 
-throws_ok( sub { $aref = get_config_attrs( "/data/nonexistent" ) },
-           'Config::XPath::ConfigNotFoundException',
-           'missing attrs throws exception' );
+dies_ok( sub { $aref = get_config_attrs( "/data/nonexistent" ) },
+         'missing attrs throws exception' );
 
-throws_ok( sub { $aref = get_config_attrs( "/data/ccc/dd" ) },
-           'Config::XPath::BadConfigException',
-           'multiple attrs throws exception' );
+dies_ok( sub { $aref = get_config_attrs( "/data/ccc/dd" ) },
+         'multiple attrs throws exception' );
 
-throws_ok( sub { $aref = get_config_attrs( "/data/aaa/\@str" ) },
-           'Config::XPath::BadConfigException',
-           'attrs of attrs throws exception' );
+dies_ok( sub { $aref = get_config_attrs( "/data/aaa/\@str" ) },
+         'attrs of attrs throws exception' );
 
 my @l;
 
@@ -67,9 +58,8 @@ is_deeply( \@l, [ qw( one two ) ], 'list of attrs values' );
 @l = get_config_list( "/data/nonexistent" );
 is_deeply( \@l, [], 'list of missing values' );
 
-throws_ok( sub { @l = get_config_list( "/data/comment()" ) },
-           'Config::XPath::BadConfigException',
-           'list of comment throws exception' );
+dies_ok( sub { @l = get_config_list( "/data/comment()" ) },
+         'list of comment throws exception' );
 
 my $m;
 

@@ -191,10 +191,6 @@ L<XML::XPath> - Perl XML module that implements XPath queries
 
 =item *
 
-L<Error> - Base module for exception-based error handling
-
-=item *
-
 http://www.w3.org/TR/xpath - XML Path Language (XPath) Version 1.0
 
 =back

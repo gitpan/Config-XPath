@@ -31,9 +31,8 @@ is_deeply( \@l, [ { name => 'one', '+' => 'ff' }, { name => 'two', '+' => 'ff' }
 @l = $c->get_list( "/data/nonexistent" );
 is_deeply( \@l, [], 'list missing' );
 
-throws_ok( sub { @l = $c->get_list( "/data/comment()" ) },
-           'Config::XPath::BadConfigException',
-           'get_config_list unrepresentable throws exception' );
+dies_ok( sub { @l = $c->get_list( "/data/comment()" ) },
+         'get_config_list unrepresentable throws exception' );
 
 @l = $c->get_list( "/data/eee/ff", '@name' );
 is_deeply( \@l, [ qw( one two ) ], 'list values using value paths' );
